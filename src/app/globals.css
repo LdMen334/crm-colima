@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/* Tokens institucionales — Cruz Roja Mexicana · Delegación Colima */
+@theme {
+  --color-crm-red: #E31B23;
+  --color-crm-red-dark: #B8141B;
+  --color-crm-red-soft: #FDECEC;
+
+  /* Azul marino profundo: sidebar y acceso */
+  --color-navy: #0B2545;
+  --color-navy-2: #13315C;
+  --color-navy-3: #1E4275;
+
+  --color-med-blue: #1D5FD1;
+  --color-med-blue-soft: #EDF3FE;
+
+  /* Neutros fríos (slate) */
+  --color-ink: #0F172A;
+  --color-ink-muted: #64748B;
+  --color-ink-subtle: #94A3B8;
+  --color-line: #E2E8F0;
+  /* Lienzo lavanda Bento Soft UI */
+  --color-canvas: #F0F1FA;
+  --color-well: #F6F7FC; /* superficie hundida dentro de una tarjeta blanca */
+
+  --font-sans: var(--font-onest), "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* Sombras difusas con desplazamiento vertical (Bento: 0 10px 35px rgba(0,0,0,.03)) */
+  --shadow-card: 0 10px 35px rgba(0, 0, 0, 0.03);
+  --shadow-raised: 0 2px 4px rgba(15, 23, 42, 0.04), 0 14px 36px -8px rgba(15, 23, 42, 0.12);
+  --shadow-pop: 0 4px 8px rgba(15, 23, 42, 0.04), 0 22px 50px -12px rgba(15, 23, 42, 0.22);
+
+  /* Curva de Emil: arranque rápido, aterrizaje suave */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-enter: enter 420ms var(--ease-out-soft) both;
+  --animate-pop: pop 180ms var(--ease-out-soft) both;
+  --animate-fade: fade 180ms ease-out both;
+  --animate-pulse-line: pulse-line 2.4s var(--ease-out-soft) 300ms both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-shadow: float-shadow 6s ease-in-out infinite;
+  --animate-heartbeat: heartbeat 1.2s ease-in-out infinite;
+  --animate-float-sm: float-sm 7s ease-in-out infinite;
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(8px) scale(0.99); }
+    to { opacity: 1; transform: none; }
+  }
+  /* Menús y diálogos: escala 95 % → 100 % con fade */
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  /* Flotación suave del estetoscopio y su sombra (se encoge al subir) */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  @keyframes float-shadow {
+    0%, 100% { transform: scaleX(1); opacity: 0.55; }
+    50% { transform: scaleX(0.82); opacity: 0.35; }
+  }
+  /* Flotación sutil de los íconos decorativos */
+  @keyframes float-sm {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  /* Latido */
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  /* Trazo del electrocardiograma: se dibuja una sola vez */
+  @keyframes pulse-line {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+  }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* Lienzo de la aplicación: lavanda plano (Bento Soft UI) */
+.ambient {
+  background-color: var(--color-canvas);
+}
+
+/* Tiras desplazables (pestañas, menú móvil) sin barra visible */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Superficies del navegador tematizadas con la paleta */
+::selection {
+  background: rgba(227, 27, 35, 0.16);
+  color: var(--color-ink);
+}
+:root {
+  caret-color: var(--color-crm-red);
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+:focus-visible {
+  outline: 2px solid rgba(227, 27, 35, 0.45);
+  outline-offset: 2px;
+}
+input:focus-visible,
+textarea:focus-visible,
+[role="combobox"]:focus-visible {
+  outline: none; /* el anillo lo dibuja el propio control */
+}
+.tabular,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Entrada escalonada: style={{ '--i': n }} */
+.stagger {
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Las animaciones en bucle se detienen por completo (no solo se aceleran) */
+  .animate-float, .animate-float-shadow, .animate-float-sm, .animate-heartbeat {
+    animation: none !important;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+}

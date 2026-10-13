@@ -1,0 +1,33 @@
+# Dependencias y build
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# Claves secretas y variables de entorno
+.env
+.env*.local
+.env.production
+*.pem
+
+# Archivos temporales de exportación (Excel / PDF)
+tmp/
+exports/
+*.xlsx
+*.pdf
+
+# Logs de error
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+logs/
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea/
