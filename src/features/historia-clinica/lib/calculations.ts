@@ -116,3 +116,13 @@ export function sumarMeses(fecha: string, meses: number): string | null {
   const dd = String(objetivo.getDate()).padStart(2, '0');
   return `${objetivo.getFullYear()}-${mm}-${dd}`;
 }
+
+/** Fecha + N días en formato AAAA-MM-DD (p. ej. Gradiente 1 Ternium: +365 días). */
+export function sumarDias(fecha: string, dias: number): string | null {
+  const d = parseFecha(fecha);
+  if (!d) return null;
+  const objetivo = new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias);
+  const mm = String(objetivo.getMonth() + 1).padStart(2, '0');
+  const dd = String(objetivo.getDate()).padStart(2, '0');
+  return `${objetivo.getFullYear()}-${mm}-${dd}`;
+}

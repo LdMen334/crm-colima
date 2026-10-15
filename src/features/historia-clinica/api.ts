@@ -23,6 +23,7 @@ export interface ExpedienteResumen {
   curp: string;
   empresa: string;
   tipoExamenMotivo: string;
+  examenesVisualesRealizados: boolean;
   actualizadoEn: string;
   actualizadoPor: { id: string; nombre: string };
 }
@@ -32,6 +33,7 @@ export interface FiltrosExpedientes {
   desde?: string;
   hasta?: string;
   tipo?: string;
+  empresa?: string;
   /** 1-indexada, como la página del backend. */
   page?: number;
   pageSize?: number;
@@ -100,6 +102,7 @@ export async function listExpedientes(
     curp: string | null;
     empresa: string | null;
     tipo_examen_motivo: string | null;
+    examenes_visuales_realizados: boolean;
     updated_at: string;
     actualizado_por: string | null;
   }
@@ -109,6 +112,7 @@ export async function listExpedientes(
       desde: filtros.desde,
       hasta: filtros.hasta,
       tipo: filtros.tipo,
+      empresa: filtros.empresa,
       page: filtros.page,
       page_size: filtros.pageSize,
     },
@@ -123,6 +127,7 @@ export async function listExpedientes(
       curp: i.curp ?? '',
       empresa: i.empresa ?? '',
       tipoExamenMotivo: i.tipo_examen_motivo ?? '',
+      examenesVisualesRealizados: i.examenes_visuales_realizados,
       actualizadoEn: i.updated_at,
       actualizadoPor: { id: '', nombre: i.actualizado_por ?? '' },
     })),
@@ -182,6 +187,22 @@ export async function cerrarAnio(anio: number): Promise<{ totalBorrado: number; 
     { method: 'POST', body: { confirmar: true } },
   );
   return { totalBorrado: data.total_borrado, items: data.items.map(aExpediente) };
+}
+
+/**
+ * Estampa la fecha de entrega de resultados (hoy, zona México) justo antes
+ * de generar el PDF oficial, para que el campo quede de solo lectura en el
+ * formulario y el documento impreso traiga la fecha real de entrega.
+ *
+ * @param claveExpediente clave de ruta "{anio}-{folio}" (p. ej. "2026-6")
+ * @return la fecha recién estampada, en formato AAAA-MM-DD
+ */
+export async function marcarEntregaResultados(claveExpediente: string): Promise<string> {
+  const { fecha_entrega_resultados: fecha } = await apiFetch<{ fecha_entrega_resultados: string }>(
+    `/expedientes/${encodeURIComponent(claveExpediente)}/entrega`,
+    { method: 'POST' },
+  );
+  return fecha;
 }
 
 /**

@@ -27,6 +27,7 @@ describe('gradiente y magnitud de riesgo', () => {
   it('ya no existen R3, R5 ni R7 en el formulario', () => {
     const keys = ALL_FIELDS.map((f) => f.key as string);
     for (const k of ['lugarCertificacion', 'clasificacionPeco', 'magnitudRiesgo']) expect(keys).not.toContain(k);
-    expect(ALL_FIELDS.filter((f) => f.n > 1000).map((f) => f.code)).toEqual(['R1', 'R2', 'R4']);
+    // R6 es nuevo (examenesVisualesRealizados, SABI): no es ninguno de los códigos retirados de arriba.
+    expect(ALL_FIELDS.filter((f) => f.n > 1000).map((f) => f.code)).toEqual(['R1', 'R2', 'R4', 'R6']);
   });
 });

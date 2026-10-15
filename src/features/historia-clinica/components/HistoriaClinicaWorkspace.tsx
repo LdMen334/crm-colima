@@ -155,7 +155,7 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
             </div>
             <p className="mt-1 text-sm text-ink-muted">Realizada el {formatFechaMx(fechaEstudios, '/')}</p>
           </div>
-          <PdfActionBar />
+          <PdfActionBar clave={claveActual} />
         </div>
 
         {error && (

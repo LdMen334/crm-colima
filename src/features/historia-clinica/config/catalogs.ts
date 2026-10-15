@@ -26,6 +26,8 @@ export const CATALOGOS = {
   genero: ['MASCULINO', 'FEMENINO'],
   estadoCivil: ['SOLTERO', 'CASADO', 'UNION LIBRE', 'DIVORCIADO', 'SEPARADO', 'VIUDO'],
   exposicionPoe: ['NEGADO', 'RUIDO', 'POLVO', 'RUIDO Y POLVO'],
+  // Campo 6 — "Zona de trabajo"
+  zonasTrabajo: ['ALZADA', 'AQUILA', 'CLUB SOCIAL', 'COLIMA', 'MINA', 'NOVA', 'PALOMAS', 'PELET', 'PRESAS', 'TECOMÁN', 'TERNIUM'],
   vivienda: ['CEMENTO', 'LADRILLO', 'MADERA', 'ADOBE', 'DEPARTAMENTO', 'RANCHO', 'VIVIENDA TEMPORAL', 'OTRA'],
   // Campo 81 — captura libre; solo sugerencias (valores vistos en los formatos)
   clasificacionTa: ['NORMAL', 'LIGERAMENTE ELEVADA', 'ALTA', 'MUY ALTA'],

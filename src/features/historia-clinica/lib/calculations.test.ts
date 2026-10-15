@@ -7,6 +7,7 @@ import {
   formatearTA,
   normalizarTallaMetros,
   parseFecha,
+  sumarDias,
   sumarMeses,
 } from './calculations';
 import { ALL_FIELDS, CAMPOS_SISTEMA, EMPTY_VALUES, FIELDS } from '../config/fields';
@@ -67,6 +68,11 @@ describe('siguiente valoración', () => {
   it('suma 6 meses como en el formato TX', () => {
     expect(sumarMeses('2026-09-28', 6)).toBe('2027-03-28');
     expect(sumarMeses('2026-08-31', 6)).toBe('2027-02-28');
+  });
+  it('suma días (Ternium Gradiente 1: +365 días)', () => {
+    expect(sumarDias('2026-01-01', 365)).toBe('2027-01-01');
+    expect(sumarDias('2024-01-01', 365)).toBe('2024-12-31'); // 2024 es bisiesto
+    expect(sumarDias('texto', 365)).toBeNull();
   });
 });
 

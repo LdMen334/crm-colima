@@ -8,6 +8,7 @@ export type TabId =
   | 'antecedentes'
   | 'laboral'
   | 'exploracion'
+  | 'examenesVisuales'
   | 'laboratorio'
   | 'gabinete'
   | 'diagnostico';
@@ -34,6 +35,7 @@ export const TABS: readonly TabDef[] = [
   { id: 'antecedentes', label: 'Antecedentes' },
   { id: 'laboral', label: 'Historia Laboral' },
   { id: 'exploracion', label: 'Exploración Física' },
+  { id: 'examenesVisuales', label: 'Exámenes Visuales' },
   { id: 'laboratorio', label: 'Laboratoriales' },
   { id: 'gabinete', label: 'Audiometría y Gabinete' },
   { id: 'diagnostico', label: 'Diagnóstico' },
@@ -63,12 +65,15 @@ export const SECTIONS: readonly SectionDef[] = [
   // Aspecto general: 082 Peso · 083 Talla · 084 IMC · 085 Estado nutricional · 086 Tipo · 087 Piel
   { id: 'aspectoGeneral', tab: 'exploracion', title: 'Aspecto general', fields: r(82, 87) },
   { id: 'toraxAbdomen', tab: 'exploracion', title: 'Tórax y abdomen', fields: r(88, 95) },
-  { id: 'ojos', tab: 'exploracion', title: 'Ojos y agudeza visual', fields: r(96, 113) },
   { id: 'oidos', tab: 'exploracion', title: 'Oídos', fields: r(114, 117) },
   { id: 'orl', tab: 'exploracion', title: 'Nariz, orofaringe y cuello', fields: r(118, 122) },
   { id: 'gu', tab: 'exploracion', title: 'Genitourinario', fields: r(123, 126) },
   { id: 'extremidades', tab: 'exploracion', title: 'Extremidades y neurológico', fields: r(127, 131) },
   { id: 'psiquismo', tab: 'exploracion', title: 'Psiquismo y padecimiento actual', fields: [132, 133] },
+
+  // Exámenes visuales (SABI)
+  { id: 'ojos', tab: 'examenesVisuales', title: 'Ojos y agudeza visual', fields: r(96, 113) },
+  { id: 'valoracionSabi', tab: 'examenesVisuales', title: 'Valoración oftalmológica especializada', fields: [203, 1006] },
 
   // Laboratorio
   { id: 'qs', tab: 'laboratorio', title: 'Química sanguínea y perfil hepático', fields: r(134, 145) },
@@ -79,7 +84,7 @@ export const SECTIONS: readonly SectionDef[] = [
   // Gabinete y audiometría
   { id: 'rx', tab: 'gabinete', title: 'Radiografías', fields: [180, 181] },
   { id: 'audiometria', tab: 'gabinete', title: 'Audiometría', fields: r(182, 200), layout: 'audiogram' },
-  { id: 'otrosEstudios', tab: 'gabinete', title: 'ECG, espirometría y oftalmología', fields: r(201, 203) },
+  { id: 'otrosEstudios', tab: 'gabinete', title: 'ECG y espirometría', fields: [201, 202] },
 
   // Diagnóstico
   { id: 'dictamen', tab: 'diagnostico', title: 'Diagnóstico final y dictamen', fields: [204, 205, 206] },

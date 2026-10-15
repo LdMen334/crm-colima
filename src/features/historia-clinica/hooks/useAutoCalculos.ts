@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useWatch, type UseFormReturn } from 'react-hook-form';
-import type { FieldKey, HistoriaClinicaValues } from '../config/fields';
+import { NO_APTO, type FieldKey, type HistoriaClinicaValues } from '../config/fields';
 import {
   calcularEdad,
   calcularGrupoEdad,
@@ -11,8 +11,12 @@ import {
   formatearTA,
   normalizarTallaMetros,
   parseFecha,
+  sumarDias,
   sumarMeses,
 } from '../lib/calculations';
+import { nivelGradiente } from '../lib/gradiente';
+
+const TERNIUM = 'TERNIUM';
 
 /**
  * Observadores de React Hook Form para los campos autocalculados:
@@ -25,8 +29,14 @@ import {
  *  TA sistólica (78) + diastólica (79) ─► TA conjunta (80)
  *  (La clasificación de T/A, campo 81, la escribe el médico.)
  *
- *  Fecha de estudios (2) ─► Fecha de siguiente valoración (R2) = +6 meses, solo como
- *  sugerencia: si el médico la escribe a mano, ya no se sobrescribe.
+ *  Fecha de estudios (2) ─► Fecha de siguiente valoración (R2):
+ *    - Empresa distinta a TERNIUM: +6 meses, solo como sugerencia (si el
+ *      médico la escribe a mano, ya no se sobrescribe).
+ *    - Empresa TERNIUM: según el Gradiente (205) — 1→+365 días, 2→+6 meses,
+ *      3→+3 meses, 4→NO APTO. Siempre se recalcula (regla corporativa fija).
+ *
+ *  Empresa (5) + Puesto (4) + Antigüedad en la empresa (8) + Antigüedad en
+ *  el puesto (9) ─► bloque "Empleo Actual" de Historia Laboral (solo lectura).
  *
  * La edad se calcula a la fecha de realización de los estudios cuando existe
  * (lo correcto para un expediente laboral); si no, a la fecha de hoy.
@@ -34,9 +44,33 @@ import {
 export function useAutoCalculos(form: UseFormReturn<HistoriaClinicaValues>) {
   const { control, setValue, getValues } = form;
 
-  const [fechaNacimiento, fechaEstudios, peso, talla, sistolica, diastolica] = useWatch({
+  const [
+    fechaNacimiento,
+    fechaEstudios,
+    peso,
+    talla,
+    sistolica,
+    diastolica,
+    empresa,
+    gradiente,
+    puesto,
+    antiguedadEmpresa,
+    antiguedadPuesto,
+  ] = useWatch({
     control,
-    name: ['fechaNacimiento', 'fechaEstudios', 'peso', 'talla', 'taSistolica', 'taDiastolica'],
+    name: [
+      'fechaNacimiento',
+      'fechaEstudios',
+      'peso',
+      'talla',
+      'taSistolica',
+      'taDiastolica',
+      'empresa',
+      'gradiente',
+      'puesto',
+      'antiguedadEmpresa',
+      'antiguedadPuesto',
+    ],
   });
 
   /** Solo escribe si el valor cambió, para no provocar renders en cadena. */
@@ -67,15 +101,43 @@ export function useAutoCalculos(form: UseFormReturn<HistoriaClinicaValues>) {
     setDerived('taConjunta', formatearTA(sistolica, diastolica) ?? '');
   }, [sistolica, diastolica, setDerived]);
 
-  // Siguiente valoración sugerida (+6 meses), respetando una captura manual
+  // Siguiente valoración: TERNIUM sigue la matriz fija por Gradiente (regla
+  // corporativa, se recalcula siempre); cualquier otra empresa conserva la
+  // sugerencia de +6 meses, que el médico puede sobrescribir a mano.
   const ultimaSugerencia = useRef('');
   useEffect(() => {
+    if ((empresa ?? '').trim().toUpperCase() === TERNIUM) {
+      const nivel = nivelGradiente(gradiente);
+      const valor =
+        nivel === 1 ? (sumarDias(fechaEstudios, 365) ?? '')
+        : nivel === 2 ? (sumarMeses(fechaEstudios, 6) ?? '')
+        : nivel === 3 ? (sumarMeses(fechaEstudios, 3) ?? '')
+        : nivel === 4 ? NO_APTO
+        : '';
+      ultimaSugerencia.current = valor;
+      setDerived('fechaSiguienteValoracion', valor);
+      return;
+    }
+
     const actual = getValues('fechaSiguienteValoracion');
     if (actual && actual !== ultimaSugerencia.current) return; // capturada a mano
     const sugerida = sumarMeses(fechaEstudios, 6) ?? '';
     ultimaSugerencia.current = sugerida;
     setDerived('fechaSiguienteValoracion', sugerida);
-  }, [fechaEstudios, getValues, setDerived]);
+  }, [empresa, gradiente, fechaEstudios, getValues, setDerived]);
+
+  // Empleo Actual (Historia Laboral): refleja Identificación, de solo lectura.
+  useEffect(() => {
+    setDerived('tActualEmpresa', empresa ?? '');
+    setDerived('tActualPuesto', puesto ?? '');
+    const tiempo = [
+      antiguedadEmpresa ? `Empresa: ${antiguedadEmpresa}` : '',
+      antiguedadPuesto ? `Puesto: ${antiguedadPuesto}` : '',
+    ]
+      .filter(Boolean)
+      .join(' / ');
+    setDerived('tActualTiempo', tiempo);
+  }, [empresa, puesto, antiguedadEmpresa, antiguedadPuesto, setDerived]);
 
   /**
    * Al salir del campo Talla, si el usuario escribió centímetros (170),

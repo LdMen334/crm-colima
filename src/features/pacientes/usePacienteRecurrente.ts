@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWatch, type UseFormReturn } from 'react-hook-form';
-import type { HistoriaClinicaValues } from '@/features/historia-clinica/config/fields';
-import { buscarPorIdentificador, CAMPOS_FIJOS, type PacienteBusqueda, type PacienteDemografico } from './api';
+import type { FieldKey, HistoriaClinicaValues } from '@/features/historia-clinica/config/fields';
+import { buscarPorIdentificador, CAMPOS_PRECARGABLES, type PacienteBusqueda, type PacienteDemografico } from './api';
 
-type Fijos = Pick<HistoriaClinicaValues, (typeof CAMPOS_FIJOS)[number]>;
+type Fijos = Partial<Record<FieldKey, string>>;
 
 export interface Precarga {
   paciente: PacienteDemografico;
@@ -33,8 +33,8 @@ export function usePacienteRecurrente(form: UseFormReturn<HistoriaClinicaValues>
 
   const aplicar = useCallback(
     (p: PacienteDemografico) => {
-      const anteriores = Object.fromEntries(CAMPOS_FIJOS.map((k) => [k, getValues(k)])) as Fijos;
-      for (const k of CAMPOS_FIJOS) setValue(k, p[k] ?? '', { shouldDirty: true });
+      const anteriores: Fijos = Object.fromEntries(CAMPOS_PRECARGABLES.map((k) => [k, getValues(k)]));
+      for (const k of CAMPOS_PRECARGABLES) setValue(k, p[k] ?? '', { shouldDirty: true });
       aplicado.current = p.id;
       setPrecarga({ paciente: p, anteriores });
     },
@@ -60,7 +60,12 @@ export function usePacienteRecurrente(form: UseFormReturn<HistoriaClinicaValues>
   const aplicarDesdeBusqueda = useCallback(
     async (resultado: PacienteBusqueda) => {
       const p = await buscarPorIdentificador({ curp: resultado.curp, nss: resultado.nss }, claveActual());
-      aplicar(p ?? { ...resultado, ultimoFolio: '', fechaNacimiento: '', genero: '', domicilioCalle: '', domicilioColonia: '', domicilioMunicipio: '', domicilioEstado: '', telefono: '', empresa: '', puesto: '' });
+      if (p) {
+        aplicar(p);
+        return;
+      }
+      const vacio = Object.fromEntries(CAMPOS_PRECARGABLES.map((k) => [k, ''])) as Fijos;
+      aplicar({ ...vacio, ...resultado, ultimoFolio: '' } as PacienteDemografico);
     },
     [aplicar, claveActual],
   );
@@ -73,7 +78,7 @@ export function usePacienteRecurrente(form: UseFormReturn<HistoriaClinicaValues>
 
   const deshacer = useCallback(() => {
     if (!precarga) return;
-    for (const k of CAMPOS_FIJOS) setValue(k, precarga.anteriores[k], { shouldDirty: true });
+    for (const k of CAMPOS_PRECARGABLES) setValue(k, precarga.anteriores[k] ?? '', { shouldDirty: true });
     setPrecarga(null);
     // Se conserva `aplicado` para no volver a precargar al mismo paciente en automático.
   }, [precarga, setValue]);

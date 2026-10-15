@@ -17,7 +17,7 @@ import { sumarMeses } from '../lib/calculations';
  * Campos que el sistema asigna y nadie captura: el folio consecutivo y la
  * fecha de realización (el día en que se crea la historia).
  */
-export const SYSTEM_FIELDS: ReadonlySet<FieldKey> = new Set(['folio', 'fechaEstudios']);
+export const SYSTEM_FIELDS: ReadonlySet<FieldKey> = new Set(['folio', 'fechaEstudios', 'fechaEntregaResultados']);
 
 interface Props {
   field: FieldDef;
@@ -101,6 +101,27 @@ export function FieldRenderer({ field, onBlur, suggestions, hint }: Props) {
         break;
       case 'computed':
         widget = <input id={id} readOnly tabIndex={-1} {...register(field.key)} className={inputReadOnly} />;
+        break;
+      case 'checkbox':
+        widget = (
+          <Controller
+            control={control}
+            name={field.key}
+            render={({ field: f }) => (
+              <label className="flex h-11 items-center gap-2 text-sm text-ink">
+                <input
+                  id={id}
+                  type="checkbox"
+                  checked={f.value === '1'}
+                  onChange={(e) => f.onChange(e.target.checked ? '1' : '')}
+                  onBlur={f.onBlur}
+                  className="h-4 w-4 rounded border-slate-300 text-crm-red focus:ring-crm-red/30"
+                />
+                Sí, se realizaron
+              </label>
+            )}
+          />
+        );
         break;
       case 'number':
         widget = (

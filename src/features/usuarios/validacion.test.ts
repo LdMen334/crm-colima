@@ -35,14 +35,41 @@ describe('cédula y universidad por rol', () => {
   });
 });
 
-describe('expediente: 003 Nombre completo', () => {
-  const validar = (nombreCompleto: string) =>
-    resolverExpediente({ ...EMPTY_VALUES, nombreCompleto }, undefined, { fields: {}, shouldUseNativeValidation: false });
-  it('vacío es válido (ningún campo es obligatorio)', async () => {
-    expect((await validar('')).errors).toEqual({});
+describe('expediente: campos obligatorios (nombre, empresa, tipo de sangre, CURP/NSS, doping)', () => {
+  /** Único de los campos obligatorios que sí deja completo: lo demás lo pone cada caso. */
+  const VALIDO = {
+    ...EMPTY_VALUES,
+    nombreCompleto: 'Ma. Fernanda Ruiz',
+    empresa: 'CONSORCIO MINERO DEMO',
+    bhGrupoRh: 'O POSITIVO',
+    curp: 'RUFM900101MCLZRR05',
+    adOpi: 'NO REACTIVO',
+    adCoc: 'NO REACTIVO',
+    adThc: 'NO REACTIVO',
+    adBzo: 'NO REACTIVO',
+    adMet: 'NO REACTIVO',
+    adAmp: 'NO REACTIVO',
+  };
+  const validar = (valores: typeof VALIDO) =>
+    resolverExpediente(valores, undefined, { fields: {}, shouldUseNativeValidation: false });
+
+  it('con todos los obligatorios completos no hay errores', async () => {
+    expect((await validar(VALIDO)).errors).toEqual({});
   });
-  it('acepta iniciales con punto y rechaza números', async () => {
-    expect((await validar('Ma. Fernanda Ruiz')).errors).toEqual({});
-    expect((await validar('Paciente 1')).errors.nombreCompleto?.message).toBe(MENSAJE_NOMBRE);
+  it('nombre completo: acepta iniciales con punto y rechaza números', async () => {
+    expect((await validar({ ...VALIDO, nombreCompleto: 'Paciente 1' })).errors.nombreCompleto?.message).toBe(MENSAJE_NOMBRE);
+  });
+  it('exige empresa', async () => {
+    expect((await validar({ ...VALIDO, empresa: '' })).errors.empresa?.message).toBe('La empresa es obligatoria.');
+  });
+  it('exige tipo de sangre', async () => {
+    expect((await validar({ ...VALIDO, bhGrupoRh: '' })).errors.bhGrupoRh?.message).toBe('Selecciona el tipo de sangre.');
+  });
+  it('exige al menos uno de CURP/NSS', async () => {
+    expect((await validar({ ...VALIDO, curp: '' })).errors.curp?.message).toBe('Captura la CURP o el NSS del paciente.');
+    expect((await validar({ ...VALIDO, curp: '', nss: '12345678901' })).errors).toEqual({});
+  });
+  it('exige los 6 resultados de antidoping', async () => {
+    expect((await validar({ ...VALIDO, adOpi: '' })).errors.adOpi?.message).toBe('Selecciona un resultado.');
   });
 });

@@ -6,6 +6,7 @@ import { PDFViewer } from '@react-pdf/renderer';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { Download, Loader2, X } from 'lucide-react';
 import type { HistoriaClinicaValues } from '@/features/historia-clinica/config/fields';
+import { marcarEntregaResultados } from '@/features/historia-clinica/api';
 import { ReporteOficial } from './templates/ReporteOficial';
 import { PLANTILLAS, type PdfLogos, type PlantillaId } from './templates/config';
 import { descargarPdf, resolveLogos } from './generate';
@@ -14,17 +15,22 @@ import { PlantillaSelector } from './PlantillaSelector';
 /**
  * Vista previa en tiempo real. Este módulo solo se descarga en el navegador
  * cuando un usuario con permiso `pdf:preview` abre el modal (import dinámico).
+ *
+ * @param clave clave de ruta "{anio}-{folio}" del expediente ya guardado, o
+ *              `undefined` si todavía no se ha guardado.
  */
 export default function PdfPreviewModal({
   plantilla,
   onPlantilla,
   onClose,
+  clave,
 }: {
   plantilla: PlantillaId;
   onPlantilla: (p: PlantillaId) => void;
   onClose: () => void;
+  clave?: string;
 }) {
-  const { control, getValues } = useFormContext<HistoriaClinicaValues>();
+  const { control, getValues, setValue } = useFormContext<HistoriaClinicaValues>();
   const live = useWatch({ control });
   const [values, setValues] = useState<HistoriaClinicaValues>(() => getValues());
   const [logos, setLogos] = useState<PdfLogos>({});
@@ -63,7 +69,13 @@ export default function PdfPreviewModal({
               onClick={async () => {
                 setDownloading(true);
                 try {
-                  await descargarPdf(getValues(), plantilla);
+                  const vals = getValues();
+                  if (clave) {
+                    const fecha = await marcarEntregaResultados(clave);
+                    setValue('fechaEntregaResultados', fecha, { shouldDirty: true });
+                    vals.fechaEntregaResultados = fecha;
+                  }
+                  await descargarPdf(vals, plantilla);
                 } finally {
                   setDownloading(false);
                 }

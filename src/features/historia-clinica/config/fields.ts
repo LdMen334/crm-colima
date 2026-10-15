@@ -10,7 +10,7 @@ import type { CatalogoKey } from './catalogs';
  * exclusivo del front-end y nunca debe llegar al PDF.
  */
 
-export type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'tel' | 'computed';
+export type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'tel' | 'computed' | 'checkbox';
 
 type Raw = readonly [n: number, key: string, label: string, type?: FieldType, catalog?: CatalogoKey];
 
@@ -21,7 +21,7 @@ const RAW = [
   [3, 'nombreCompleto', 'Nombre completo'],
   [4, 'puesto', 'Puesto'],
   [5, 'empresa', 'Empresa (tarjeta de acceso)'],
-  [6, 'zonaTrabajo', 'Zona de trabajo'],
+  [6, 'zonaTrabajo', 'Zona de trabajo', 'select', 'zonasTrabajo'],
   [7, 'tipoExamenMotivo', 'Motivo del Examen', 'select', 'motivoExamen'],
   [8, 'antiguedadEmpresa', 'Antigüedad en la empresa'],
   [9, 'antiguedadPuesto', 'Antigüedad en el puesto'],
@@ -65,9 +65,9 @@ const RAW = [
   [45, 'tatuajes', 'Tatuajes'],
 
   // ── Módulo 3 · Historia de Trabajo (46-58)
-  [46, 'tActualEmpresa', 'Empresa'],
-  [47, 'tActualPuesto', 'Puesto'],
-  [48, 'tActualTiempo', 'Tiempo'],
+  [46, 'tActualEmpresa', 'Empresa', 'computed'],
+  [47, 'tActualPuesto', 'Puesto', 'computed'],
+  [48, 'tActualTiempo', 'Tiempo', 'computed'],
   [49, 'tActualCondiciones', 'Condiciones especiales'],
   [50, 'tPenultimoEmpresa', 'Empresa'],
   [51, 'tPenultimoPuesto', 'Puesto'],
@@ -258,6 +258,7 @@ const RAW_REPORTE = [
   [1001, 'fechaEntregaResultados', 'Fecha de entrega de resultados', 'date'],
   [1002, 'fechaSiguienteValoracion', 'Fecha de siguiente valoración', 'date'],
   [1004, 'tipoEmpleado', 'Tipo de empleado'],
+  [1006, 'examenesVisualesRealizados', 'Exámenes visuales realizados', 'checkbox'],
 ] as const satisfies readonly Raw[];
 
 export type FieldKey = (typeof RAW)[number][1] | (typeof RAW_REPORTE)[number][1];

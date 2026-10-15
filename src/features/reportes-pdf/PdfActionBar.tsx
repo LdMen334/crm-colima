@@ -7,6 +7,7 @@ import { Download, FileText, Loader2 } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { can } from '@/features/auth/permissions';
 import type { HistoriaClinicaValues } from '@/features/historia-clinica/config/fields';
+import { marcarEntregaResultados } from '@/features/historia-clinica/api';
 import { PlantillaSelector } from './PlantillaSelector';
 import type { PlantillaId } from './templates/config';
 
@@ -16,15 +17,19 @@ const PdfPreviewModal = dynamic(() => import('./PdfPreviewModal'), { ssr: false 
 /**
  * Barra de reportes oficiales. Para cualquier rol distinto de "Leo" no
  * renderiza nada: ni botones, ni selector, ni el código del generador PDF.
+ *
+ * @param clave clave de ruta "{anio}-{folio}" del expediente ya guardado, o
+ *              `undefined` si todavía no se ha guardado (entonces no hay
+ *              nada que estampar en el servidor al descargar).
  */
-export function PdfActionBar() {
+export function PdfActionBar({ clave }: { clave?: string }) {
   const { user } = useAuth();
   if (!can(user?.role, 'pdf:preview')) return null; // role !== 'Leo'
-  return <PdfActionBarInner />;
+  return <PdfActionBarInner clave={clave} />;
 }
 
-function PdfActionBarInner() {
-  const { getValues } = useFormContext<HistoriaClinicaValues>();
+function PdfActionBarInner({ clave }: { clave?: string }) {
+  const { getValues, setValue } = useFormContext<HistoriaClinicaValues>();
   const [plantilla, setPlantilla] = useState<PlantillaId>('PECO');
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -33,7 +38,13 @@ function PdfActionBarInner() {
     setDownloading(true);
     try {
       const { descargarPdf } = await import('./generate');
-      await descargarPdf(getValues(), plantilla);
+      const values = getValues();
+      if (clave) {
+        const fecha = await marcarEntregaResultados(clave);
+        setValue('fechaEntregaResultados', fecha, { shouldDirty: true });
+        values.fechaEntregaResultados = fecha;
+      }
+      await descargarPdf(values, plantilla);
     } finally {
       setDownloading(false);
     }
@@ -63,7 +74,7 @@ function PdfActionBarInner() {
           <span className="hidden sm:inline">Descargar</span>
         </button>
       </div>
-      {open && <PdfPreviewModal plantilla={plantilla} onPlantilla={setPlantilla} onClose={() => setOpen(false)} />}
+      {open && <PdfPreviewModal plantilla={plantilla} onPlantilla={setPlantilla} onClose={() => setOpen(false)} clave={clave} />}
     </>
   );
 }

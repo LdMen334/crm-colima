@@ -1,4 +1,4 @@
-import { ClipboardPlus, FileSpreadsheet, FolderSearch, ScrollText, UserRoundCog, UsersRound, type LucideIcon } from 'lucide-react';
+import { ClipboardPlus, Eye, FileSpreadsheet, FolderSearch, ScrollText, UserRoundCog, UsersRound, type LucideIcon } from 'lucide-react';
 import type { Permission } from '@/features/auth/permissions';
 
 export interface NavItem {
@@ -14,6 +14,7 @@ export const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[]
     items: [
       { href: '/expedientes', label: 'Navegador de expedientes', icon: FolderSearch, permission: 'expediente:read' },
       { href: '/expediente', label: 'Nueva historia clínica', icon: ClipboardPlus, permission: 'expediente:write' },
+      { href: '/reportes-sabi', label: 'Reporte SABI', icon: Eye, permission: 'expediente:read' },
     ],
   },
   {
