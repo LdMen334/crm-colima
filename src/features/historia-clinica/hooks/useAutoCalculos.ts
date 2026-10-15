@@ -16,8 +16,6 @@ import {
 } from '../lib/calculations';
 import { nivelGradiente } from '../lib/gradiente';
 
-const TERNIUM = 'TERNIUM';
-
 /**
  * Observadores de React Hook Form para los campos autocalculados:
  *
@@ -29,11 +27,11 @@ const TERNIUM = 'TERNIUM';
  *  TA sistólica (78) + diastólica (79) ─► TA conjunta (80)
  *  (La clasificación de T/A, campo 81, la escribe el médico.)
  *
- *  Fecha de estudios (2) ─► Fecha de siguiente valoración (R2):
- *    - Empresa distinta a TERNIUM: +6 meses, solo como sugerencia (si el
- *      médico la escribe a mano, ya no se sobrescribe).
- *    - Empresa TERNIUM: según el Gradiente (205) — 1→+365 días, 2→+6 meses,
- *      3→+3 meses, 4→NO APTO. Siempre se recalcula (regla corporativa fija).
+ *  Fecha de estudios (2) ─► Fecha de siguiente valoración (R2), según el
+ *  Gradiente (205) — 1→+365 días, 2→+6 meses, 3→+3 meses, 4→NO APTO. Se
+ *  recalcula siempre que cambie el gradiente o la fecha de estudios. Sin
+ *  gradiente capturado aún, se deja una sugerencia de +6 meses que el
+ *  médico puede sobrescribir a mano (si la escribió, ya no se pisa).
  *
  *  Empresa (5) + Puesto (4) + Antigüedad en la empresa (8) + Antigüedad en
  *  el puesto (9) ─► bloque "Empleo Actual" de Historia Laboral (solo lectura).
@@ -101,19 +99,19 @@ export function useAutoCalculos(form: UseFormReturn<HistoriaClinicaValues>) {
     setDerived('taConjunta', formatearTA(sistolica, diastolica) ?? '');
   }, [sistolica, diastolica, setDerived]);
 
-  // Siguiente valoración: TERNIUM sigue la matriz fija por Gradiente (regla
-  // corporativa, se recalcula siempre); cualquier otra empresa conserva la
-  // sugerencia de +6 meses, que el médico puede sobrescribir a mano.
+  // Siguiente valoración: matriz fija por Gradiente, para cualquier paciente
+  // (regla corporativa, se recalcula siempre que haya gradiente). Sin
+  // gradiente capturado, se deja la sugerencia de +6 meses, que el médico
+  // puede sobrescribir a mano.
   const ultimaSugerencia = useRef('');
   useEffect(() => {
-    if ((empresa ?? '').trim().toUpperCase() === TERNIUM) {
-      const nivel = nivelGradiente(gradiente);
+    const nivel = nivelGradiente(gradiente);
+    if (nivel !== null) {
       const valor =
         nivel === 1 ? (sumarDias(fechaEstudios, 365) ?? '')
         : nivel === 2 ? (sumarMeses(fechaEstudios, 6) ?? '')
         : nivel === 3 ? (sumarMeses(fechaEstudios, 3) ?? '')
-        : nivel === 4 ? NO_APTO
-        : '';
+        : NO_APTO;
       ultimaSugerencia.current = valor;
       setDerived('fechaSiguienteValoracion', valor);
       return;
@@ -124,7 +122,7 @@ export function useAutoCalculos(form: UseFormReturn<HistoriaClinicaValues>) {
     const sugerida = sumarMeses(fechaEstudios, 6) ?? '';
     ultimaSugerencia.current = sugerida;
     setDerived('fechaSiguienteValoracion', sugerida);
-  }, [empresa, gradiente, fechaEstudios, getValues, setDerived]);
+  }, [gradiente, fechaEstudios, getValues, setDerived]);
 
   // Empleo Actual (Historia Laboral): refleja Identificación, de solo lectura.
   useEffect(() => {
