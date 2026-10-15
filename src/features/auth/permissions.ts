@@ -10,7 +10,8 @@ export type Permission =
   | 'admin:usuarios'
   | 'admin:bitacora'
   | 'admin:reportes'
-  | 'perfil:editar';
+  | 'perfil:editar'
+  | 'reportes-sabi:pdf-download';
 
 /**
  * Matriz de permisos. "Servicios Médicos" captura y consulta, pero nunca
@@ -33,6 +34,7 @@ const MATRIX: Record<Role, readonly Permission[]> = {
     'admin:bitacora',
     'admin:reportes',
     'perfil:editar',
+    'reportes-sabi:pdf-download',
   ],
 };
 

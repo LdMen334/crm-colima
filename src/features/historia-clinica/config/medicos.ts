@@ -102,6 +102,16 @@ export const findMedico = (nombre: string | undefined) =>
 export const medicoIdPorNombre = (nombre: string | undefined): string | undefined =>
   idPorNombre.get((nombre ?? '').trim().toUpperCase());
 
+/**
+ * Médicos con su id de usuario (medico_id), para el filtro de administrador
+ * del Reporte SABI. Solo incluye a los médicos registrados en el backend
+ * (filtra a los firmantes oficiales fijos, que no tienen id de usuario real).
+ */
+export const listarMedicosConId = (): { id: string; nombre: string }[] =>
+  listarMedicos()
+    .map((m) => ({ id: medicoIdPorNombre(m.nombre), nombre: m.nombre }))
+    .filter((m): m is { id: string; nombre: string } => !!m.id);
+
 /** Nombre del médico para un medico_id devuelto por el backend. */
 export const nombrePorMedicoId = (id: string | undefined | null): string =>
   (id && nombrePorId.get(id)) || '';

@@ -21,9 +21,14 @@ export interface ExpedienteResumen {
   fechaEstudios: string;
   nombreCompleto: string;
   curp: string;
+  nss: string;
   empresa: string;
+  zonaTrabajo: string;
   tipoExamenMotivo: string;
   examenesVisualesRealizados: boolean;
+  medico: string;
+  gradiente: string;
+  noApto: boolean;
   actualizadoEn: string;
   actualizadoPor: { id: string; nombre: string };
 }
@@ -34,6 +39,9 @@ export interface FiltrosExpedientes {
   hasta?: string;
   tipo?: string;
   empresa?: string;
+  /** Servicios Médicos: el backend lo ignora y fuerza el propio id, sin importar lo que se mande aquí. */
+  medicoId?: string;
+  soloExamenesVisuales?: boolean;
   /** 1-indexada, como la página del backend. */
   page?: number;
   pageSize?: number;
@@ -100,9 +108,14 @@ export async function listExpedientes(
     fecha_estudios: string;
     nombre_completo: string | null;
     curp: string | null;
+    nss: string | null;
     empresa: string | null;
+    zona_trabajo: string | null;
     tipo_examen_motivo: string | null;
     examenes_visuales_realizados: boolean;
+    medico: string | null;
+    gradiente: number | string | null;
+    no_apto: boolean;
     updated_at: string;
     actualizado_por: string | null;
   }
@@ -113,6 +126,8 @@ export async function listExpedientes(
       hasta: filtros.hasta,
       tipo: filtros.tipo,
       empresa: filtros.empresa,
+      medico_id: filtros.medicoId,
+      solo_examenes_visuales: filtros.soloExamenesVisuales ? 1 : undefined,
       page: filtros.page,
       page_size: filtros.pageSize,
     },
@@ -125,13 +140,24 @@ export async function listExpedientes(
       fechaEstudios: i.fecha_estudios,
       nombreCompleto: i.nombre_completo ?? '',
       curp: i.curp ?? '',
+      nss: i.nss ?? '',
       empresa: i.empresa ?? '',
+      zonaTrabajo: i.zona_trabajo ?? '',
       tipoExamenMotivo: i.tipo_examen_motivo ?? '',
       examenesVisualesRealizados: i.examenes_visuales_realizados,
+      medico: i.medico ?? '',
+      gradiente: i.gradiente == null ? '' : String(i.gradiente),
+      noApto: i.no_apto,
       actualizadoEn: i.updated_at,
       actualizadoPor: { id: '', nombre: i.actualizado_por ?? '' },
     })),
   };
+}
+
+/** Empresas distintas capturadas en algún expediente, para el filtro del Reporte SABI. */
+export async function listarEmpresas(): Promise<string[]> {
+  const { items } = await apiFetch<{ items: string[] }>('/expedientes/empresas');
+  return items;
 }
 
 /** Tarjetas de métricas del navegador de expedientes. */

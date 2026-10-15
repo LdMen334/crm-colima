@@ -1,13 +1,45 @@
 import ExcelJS from 'exceljs';
 import type { ExpedienteResumen } from '@/features/historia-clinica/api';
 import { formatFechaMx } from '@/features/historia-clinica/lib/format';
+import { curpONss, dictamenDe } from './lib';
+import type { ModoReporte } from './ReporteSabiPdfDocument';
 
 /**
- * Genera el .xlsx del reporte de pacientes atendidos (Fundación SABI): Fecha,
- * Empresa, Nombre completo y Estatus del examen visual. Se importa de forma
- * dinámica: exceljs solo se descarga al exportar.
+ * Genera el .xlsx del reporte de pacientes atendidos (Fundación SABI /
+ * Atenciones por médico). "Examen visual" solo aplica en modo SABI. Se
+ * importa de forma dinámica: exceljs solo se descarga al exportar.
  */
-export function construirLibroSabi(items: ExpedienteResumen[], titulo: string): ExcelJS.Workbook {
+interface Columna {
+  header: string;
+  width: number;
+  valor: (e: ExpedienteResumen) => string;
+}
+
+function columnasDe(modo: ModoReporte): Columna[] {
+  const columnas: Columna[] = [
+    { header: 'Fecha', width: 14, valor: (e) => formatFechaMx(e.fechaEstudios, '/') },
+    { header: 'Folio', width: 10, valor: (e) => e.folio },
+    { header: 'Nombre completo', width: 34, valor: (e) => e.nombreCompleto || 'Sin nombre' },
+    { header: 'CURP / NSS', width: 20, valor: curpONss },
+    { header: 'Empresa', width: 30, valor: (e) => e.empresa || '—' },
+    { header: 'Zona de trabajo', width: 18, valor: (e) => e.zonaTrabajo || '—' },
+  ];
+  if (modo === 'sabi') {
+    columnas.push({
+      header: 'Estatus del examen visual',
+      width: 24,
+      valor: (e) => (e.examenesVisualesRealizados ? 'Realizado' : 'Pendiente'),
+    });
+  }
+  columnas.push(
+    { header: 'Dictamen final / Aptitud', width: 22, valor: dictamenDe },
+    { header: 'Médico atendió', width: 30, valor: (e) => e.medico || '—' },
+  );
+  return columnas;
+}
+
+export function construirLibroSabi(items: ExpedienteResumen[], modo: ModoReporte, titulo: string): ExcelJS.Workbook {
+  const columnas = columnasDe(modo);
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Historias Clínicas · Cruz Roja Mexicana Colima';
   wb.created = new Date();
@@ -16,13 +48,6 @@ export function construirLibroSabi(items: ExpedienteResumen[], titulo: string): 
     views: [{ state: 'frozen', ySplit: 2 }],
     properties: { defaultRowHeight: 18 },
   });
-
-  const columnas = [
-    { header: 'Fecha', width: 14 },
-    { header: 'Empresa', width: 34 },
-    { header: 'Nombre completo', width: 34 },
-    { header: 'Estatus del examen visual', width: 24 },
-  ];
 
   ws.mergeCells(1, 1, 1, columnas.length);
   const t = ws.getCell(1, 1);
@@ -43,12 +68,7 @@ export function construirLibroSabi(items: ExpedienteResumen[], titulo: string): 
   columnas.forEach((c, i) => (ws.getColumn(i + 1).width = c.width));
 
   items.forEach((e, i) => {
-    const row = ws.addRow([
-      formatFechaMx(e.fechaEstudios, '/'),
-      e.empresa || '—',
-      e.nombreCompleto || 'Sin nombre',
-      e.examenesVisualesRealizados ? 'Realizado' : 'Pendiente',
-    ]);
+    const row = ws.addRow(columnas.map((c) => c.valor(e)));
     if (i % 2 === 1) {
       row.eachCell({ includeEmpty: true }, (cell) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF7F7F5' } };
@@ -60,8 +80,8 @@ export function construirLibroSabi(items: ExpedienteResumen[], titulo: string): 
   return wb;
 }
 
-export async function descargarExcelSabi(items: ExpedienteResumen[], nombreArchivo: string, titulo: string) {
-  const wb = construirLibroSabi(items, titulo);
+export async function descargarExcelSabi(items: ExpedienteResumen[], modo: ModoReporte, nombreArchivo: string, titulo: string) {
+  const wb = construirLibroSabi(items, modo, titulo);
   const buffer = await wb.xlsx.writeBuffer();
   const url = URL.createObjectURL(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
