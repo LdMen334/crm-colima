@@ -49,7 +49,7 @@ export function ReporteSabiPanel() {
   }
 
   return (
-    <>
+    <div className="w-full animate-enter px-4 pb-16 pt-6 sm:px-6">
       <PageHeader title="Reporte SABI" description="Pacientes atendidos por periodo y empresa, con el estatus de su examen visual." />
 
       <div className={`${card} overflow-hidden`}>
@@ -128,6 +128,6 @@ export function ReporteSabiPanel() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
