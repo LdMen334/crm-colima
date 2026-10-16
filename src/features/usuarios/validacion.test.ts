@@ -35,20 +35,31 @@ describe('cédula y universidad por rol', () => {
   });
 });
 
-describe('expediente: campos obligatorios (nombre, empresa, tipo de sangre, CURP/NSS, doping)', () => {
-  /** Único de los campos obligatorios que sí deja completo: lo demás lo pone cada caso. */
+describe('expediente: campos obligatorios (Datos Generales + médico dictaminador)', () => {
+  /** Expediente con todos los campos de Datos Generales + médico dictaminador completos. */
   const VALIDO = {
     ...EMPTY_VALUES,
     nombreCompleto: 'Ma. Fernanda Ruiz',
+    fechaEstudios: '2026-10-15',
+    puesto: 'OPERADOR',
     empresa: 'CONSORCIO MINERO DEMO',
-    bhGrupoRh: 'O POSITIVO',
+    tipoExamenMotivo: 'INGRESO / EVALUACIÓN INICIAL',
+    antiguedadEmpresa: '2 AÑOS',
+    antiguedadPuesto: '1 AÑO',
+    exposicionPoe: 'NINGUNA',
+    genero: 'FEMENINO',
+    tipoExamenCategoria: 'PERSONAL GENERAL',
+    fechaNacimiento: '1990-01-01',
+    domicilioCalle: 'AV REFORMA 123',
+    domicilioColonia: 'CENTRO',
+    domicilioMunicipio: 'COLIMA',
+    domicilioEstado: 'COLIMA',
+    telefono: '3121234567',
+    originario: 'COLIMA',
+    religion: 'Ninguna',
+    estadoCivil: 'SOLTERO',
     curp: 'RUFM900101MCLZRR05',
-    adOpi: 'NO REACTIVO',
-    adCoc: 'NO REACTIVO',
-    adThc: 'NO REACTIVO',
-    adBzo: 'NO REACTIVO',
-    adMet: 'NO REACTIVO',
-    adAmp: 'NO REACTIVO',
+    medicoDictaminador: 'MANUEL ALEJANDRO CORIA SALAS',
   };
   const validar = (valores: typeof VALIDO) =>
     resolverExpediente(valores, undefined, { fields: {}, shouldUseNativeValidation: false });
@@ -62,14 +73,21 @@ describe('expediente: campos obligatorios (nombre, empresa, tipo de sangre, CURP
   it('exige empresa', async () => {
     expect((await validar({ ...VALIDO, empresa: '' })).errors.empresa?.message).toBe('La empresa es obligatoria.');
   });
-  it('exige tipo de sangre', async () => {
-    expect((await validar({ ...VALIDO, bhGrupoRh: '' })).errors.bhGrupoRh?.message).toBe('Selecciona el tipo de sangre.');
-  });
   it('exige al menos uno de CURP/NSS', async () => {
     expect((await validar({ ...VALIDO, curp: '' })).errors.curp?.message).toBe('Captura la CURP o el NSS del paciente.');
     expect((await validar({ ...VALIDO, curp: '', nss: '12345678901' })).errors).toEqual({});
   });
-  it('exige los 6 resultados de antidoping', async () => {
-    expect((await validar({ ...VALIDO, adOpi: '' })).errors.adOpi?.message).toBe('Selecciona un resultado.');
+  it('exige médico dictaminador / médico que atiende', async () => {
+    expect((await validar({ ...VALIDO, medicoDictaminador: '' })).errors.medicoDictaminador?.message).toBe(
+      'Selecciona el médico dictaminador / médico que atiende.',
+    );
+  });
+  it('tipo de sangre y los 6 resultados de antidoping ya no son obligatorios', async () => {
+    expect(
+      (await validar({ ...VALIDO, bhGrupoRh: '', adOpi: '', adCoc: '', adThc: '', adBzo: '', adMet: '', adAmp: '' })).errors,
+    ).toEqual({});
+  });
+  it('zona de trabajo y área ya no son obligatorias', async () => {
+    expect((await validar({ ...VALIDO, zonaTrabajo: '', area: '' })).errors).toEqual({});
   });
 });

@@ -91,11 +91,19 @@ export async function siguienteFolio(): Promise<string> {
   return String(folio);
 }
 
-/** Valores iniciales de una historia nueva: folio vacío (se completa al llegar la respuesta del servidor) y fecha de hoy. */
-export function valoresNuevoExpediente(): HistoriaClinicaValues {
+/**
+ * Valores iniciales de una historia nueva: folio vacío (se completa al llegar la
+ * respuesta del servidor), fecha de hoy y, si quien captura es Servicios Médicos,
+ * él mismo precargado como "Médico dictaminador" (203/206): el navegador de
+ * expedientes de un no-admin solo muestra lo que tiene asignado ese campo
+ * (ver ExpedienteController::index), así que si lo deja en blanco su propia
+ * atención queda invisible para él mismo aunque sí exista en la base.
+ */
+export function valoresNuevoExpediente(user?: SessionUser | null): HistoriaClinicaValues {
   const hoy = new Date();
   const fechaEstudios = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
-  return conValoresDeSistema({ ...EMPTY_VALUES, fechaEstudios });
+  const medicoDictaminador = user?.role === 'ServiciosMedicos' ? user.nombre : '';
+  return conValoresDeSistema({ ...EMPTY_VALUES, fechaEstudios, medicoDictaminador });
 }
 
 /** Navegador de expedientes: búsqueda, filtros y paginación los resuelve el servidor. */

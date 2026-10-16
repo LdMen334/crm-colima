@@ -10,7 +10,7 @@ import { btnPrimary, btnSecondary } from '@/components/ui/styles';
 import { Badge } from '@/components/ui/Badge';
 import { FIELD_BY_KEY, type FieldKey, type HistoriaClinicaValues } from '../config/fields';
 import { SECTIONS, type TabId } from '../config/sections';
-import { resolverExpediente } from '../lib/validacion';
+import { CAMPOS_ADVERTENCIA, resolverExpediente } from '../lib/validacion';
 import { useAutoCalculos } from '../hooks/useAutoCalculos';
 import { abrirExpediente, clave, guardarExpediente, siguienteFolio, valoresNuevoExpediente } from '../api';
 import { formatFechaMx } from '../lib/format';
@@ -29,7 +29,7 @@ type Carga = 'cargando' | 'listo' | 'no-encontrado';
 export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
   const { user } = useAuth();
   // Sin reglas de validación: los 206 campos son opcionales.
-  const [iniciales] = useState(valoresNuevoExpediente);
+  const [iniciales] = useState(() => valoresNuevoExpediente(user));
   const form = useForm<HistoriaClinicaValues>({ defaultValues: iniciales, resolver: resolverExpediente });
   const [tab, setTab] = useState<TabId>('generales');
   const { normalizarTallaAlSalir } = useAutoCalculos(form);
@@ -41,6 +41,8 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Etiquetas de CAMPOS_ADVERTENCIA que siguieron vacías tras el primer guardado. */
+  const [advertencia, setAdvertencia] = useState<string[] | null>(null);
   const recurrente = usePacienteRecurrente(form, carga === 'listo' && !guardado);
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
   }, [folio, guardado]);
 
   function nuevo() {
-    form.reset(valoresNuevoExpediente());
+    form.reset(valoresNuevoExpediente(user));
     recurrente.limpiar();
     setGuardado(false);
     setClaveActual(undefined);
@@ -84,6 +86,7 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
 
   const onSubmit = form.handleSubmit(async (values) => {
     if (!user) return;
+    const esPrimerGuardado = !guardado;
     setSaving(true);
     setError(null);
     try {
@@ -97,6 +100,11 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
         recurrente.limpiar();
         // Cambia la URL sin volver a montar la página (no genera una "Consulta" extra)
         window.history.replaceState(null, '', `/expediente/${claveNueva}`);
+      }
+      // Aviso no bloqueante, solo la primera vez que se guarda el expediente.
+      if (esPrimerGuardado) {
+        const faltantes = CAMPOS_ADVERTENCIA.filter((k) => !(exp.values[k] ?? '').toString().trim());
+        setAdvertencia(faltantes.length ? faltantes.map((k) => FIELD_BY_KEY.get(k)!.label) : null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No fue posible guardar el expediente.');
@@ -162,6 +170,25 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
           <p role="alert" className="mb-5 animate-pop rounded-2xl border border-crm-red/15 bg-crm-red-soft px-4 py-3 text-sm text-crm-red-dark">
             {error}
           </p>
+        )}
+
+        {advertencia && (
+          <div
+            role="status"
+            className="mb-5 flex animate-pop items-start justify-between gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+          >
+            <p>
+              Expediente guardado. Aún faltan por capturar: <strong>{advertencia.join(', ')}</strong>.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAdvertencia(null)}
+              aria-label="Cerrar aviso"
+              className="-mr-1 -mt-0.5 shrink-0 text-amber-700 transition-colors hover:text-amber-900"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
 
         <div className="mb-5 flex flex-wrap items-center gap-3">
