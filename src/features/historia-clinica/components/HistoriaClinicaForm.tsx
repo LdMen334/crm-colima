@@ -45,7 +45,7 @@ export function HistoriaClinicaForm({
 
   return (
     <section className={`${card} min-w-0`}>
-      <div className="relative m-3">
+      <div className="relative m-3 w-full max-w-[280px]">
         <label htmlFor="tab-select" className="sr-only">
           Módulo de la historia clínica
         </label>
@@ -54,7 +54,7 @@ export function HistoriaClinicaForm({
           aria-label="Módulo de la historia clínica"
           value={tab}
           onChange={(e) => setTab(e.target.value as TabId)}
-          className="w-full cursor-pointer appearance-none rounded-full bg-crm-red py-2.5 pl-5 pr-11 text-sm font-semibold text-white shadow-md shadow-red-500/20 outline-none transition-colors duration-200 focus:ring-2 focus:ring-crm-red/35"
+          className="w-full max-w-[280px] cursor-pointer appearance-none rounded-full bg-crm-red py-2.5 pl-5 pr-11 text-sm font-semibold text-white shadow-md shadow-red-500/20 outline-none transition-colors duration-200 focus:ring-2 focus:ring-crm-red/35"
         >
           {TABS.map((t) => {
             const p = progress[t.id];
