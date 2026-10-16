@@ -31,7 +31,8 @@ const campoObligatorio = (mensaje: string) => z.string().trim().min(1, mensaje);
  * de "Datos del reporte" (Fecha de entrega de resultados la estampa el
  * sistema hasta que se entrega el PDF, no existe al capturar, y Fecha de
  * siguiente valoración ya se autocalcula sola en useAutoCalculos), y Zona
- * de trabajo / Área, que vuelven a ser opcionales.
+ * de trabajo / Área / Categoría del examen / Exposición (POE), que vuelven
+ * a ser opcionales.
  *
  * CURP/NSS: se mantiene "al menos uno de los dos", no ambos obligatorios —
  * no todos los pacientes tienen NSS.
@@ -45,9 +46,7 @@ export const esquemaExpediente = z
     tipoExamenMotivo: campoObligatorio('Selecciona el motivo del examen.'),
     antiguedadEmpresa: campoObligatorio('La antigüedad en la empresa es obligatoria.'),
     antiguedadPuesto: campoObligatorio('La antigüedad en el puesto es obligatoria.'),
-    exposicionPoe: campoObligatorio('La exposición (POE) es obligatoria.'),
     genero: campoObligatorio('Selecciona el género.'),
-    tipoExamenCategoria: campoObligatorio('Selecciona la categoría del examen / puesto.'),
     fechaNacimiento: campoObligatorio('La fecha de nacimiento es obligatoria.'),
     domicilioCalle: campoObligatorio('La calle y número son obligatorios.'),
     domicilioColonia: campoObligatorio('La colonia es obligatoria.'),
