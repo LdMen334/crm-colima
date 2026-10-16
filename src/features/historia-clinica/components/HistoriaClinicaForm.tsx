@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { useMemo, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
 import { card } from '@/components/ui/styles';
@@ -25,12 +24,6 @@ export function HistoriaClinicaForm({
   onTabChange: (tab: TabId) => void;
 }) {
   const { control } = useFormContext<HistoriaClinicaValues>();
-  const navRef = useRef<HTMLElement>(null);
-
-  // La pestaña activa siempre a la vista (también cuando se llega por un error de validación)
-  useEffect(() => {
-    navRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
-  }, [tab]);
   const values = useWatch({ control }) as Partial<HistoriaClinicaValues>;
 
   // Avance por pestaña (campos capturados / total)
@@ -47,42 +40,43 @@ export function HistoriaClinicaForm({
     return out;
   }, [values]);
 
+  const tabActual = TABS.find((t) => t.id === tab)!;
+  const progresoActual = progress[tab];
+
   return (
     <section className={`${card} min-w-0`}>
-      <nav ref={navRef} className="no-scrollbar m-3 flex gap-1 overflow-x-auto rounded-full bg-well p-1.5" role="tablist" aria-label="Módulos de la historia clínica">
-        {TABS.map((t) => {
-          const active = t.id === tab;
-          const p = progress[t.id];
-          return (
-            <button
-              key={t.id}
-              role="tab"
-              type="button"
-              aria-selected={active}
-              onClick={() => setTab(t.id)}
-              className={`relative flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors duration-200 active:scale-[0.98] ${
-                active ? 'text-white' : 'text-slate-500 hover:bg-white hover:text-slate-800'
-              }`}
-            >
-              {active && (
-                <motion.span
-                  layoutId="tab-activa"
-                  transition={{ type: 'spring', stiffness: 520, damping: 40 }}
-                  className="absolute inset-0 rounded-full bg-crm-red shadow-md shadow-red-500/20"
-                />
-              )}
-              <span className="relative">{t.label}</span>
-              <span
-                className={`relative rounded-full px-2 py-0.5 text-[10px] font-medium tabular-nums ${
-                  active ? 'bg-white/20 text-white' : p.filled === p.total ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-slate-400'
-                }`}
-              >
-                {p.filled}/{p.total}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+      <div className="relative m-3">
+        <label htmlFor="tab-select" className="sr-only">
+          Módulo de la historia clínica
+        </label>
+        <select
+          id="tab-select"
+          aria-label="Módulo de la historia clínica"
+          value={tab}
+          onChange={(e) => setTab(e.target.value as TabId)}
+          className="w-full cursor-pointer appearance-none rounded-full bg-crm-red py-2.5 pl-5 pr-11 text-sm font-semibold text-white shadow-md shadow-red-500/20 outline-none transition-colors duration-200 focus:ring-2 focus:ring-crm-red/35"
+        >
+          {TABS.map((t) => {
+            const p = progress[t.id];
+            return (
+              <option key={t.id} value={t.id} className="bg-white text-ink">
+                {t.label} · {p.filled}/{p.total}
+              </option>
+            );
+          })}
+        </select>
+        <ChevronDown
+          strokeWidth={2}
+          aria-hidden
+          className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white"
+        />
+        {progresoActual.filled === progresoActual.total && (
+          <span className="pointer-events-none absolute right-10 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white sm:inline-block">
+            Completo
+          </span>
+        )}
+      </div>
+      <p className="mx-3 mb-2 text-xs text-ink-subtle">{tabActual.label}: {progresoActual.filled} de {progresoActual.total} campos capturados.</p>
 
       <div key={tab} className="animate-fade space-y-3 px-3 pb-3 sm:px-4 sm:pb-4" role="tabpanel">
         {sectionsOf(tab).map((s, i) => (
