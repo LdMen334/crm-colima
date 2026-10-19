@@ -43,6 +43,8 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
   const [error, setError] = useState<string | null>(null);
   /** Etiquetas de CAMPOS_ADVERTENCIA que siguieron vacías tras el primer guardado. */
   const [advertencia, setAdvertencia] = useState<string[] | null>(null);
+  /** Folio que se mostraba antes del primer guardado, si el servidor terminó asignando otro. */
+  const [folioReasignado, setFolioReasignado] = useState<string | null>(null);
   const recurrente = usePacienteRecurrente(form, carga === 'listo' && !guardado);
 
   useEffect(() => {
@@ -80,6 +82,7 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
     setGuardado(false);
     setClaveActual(undefined);
     setSavedAt(null);
+    setFolioReasignado(null);
     window.history.replaceState(null, '', '/expediente');
     siguienteFolio().then((f) => form.setValue('folio', f));
   }
@@ -103,6 +106,9 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
       }
       // Aviso no bloqueante, solo la primera vez que se guarda el expediente.
       if (esPrimerGuardado) {
+        // El folio en pantalla es solo una vista previa: si otro equipo guardó
+        // antes, el servidor asigna el siguiente libre y hay que avisarlo.
+        setFolioReasignado(values.folio && values.folio !== exp.folio ? values.folio : null);
         const faltantes = CAMPOS_ADVERTENCIA.filter((k) => !(exp.values[k] ?? '').toString().trim());
         setAdvertencia(faltantes.length ? faltantes.map((k) => FIELD_BY_KEY.get(k)!.label) : null);
       }
@@ -169,6 +175,13 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
         {error && (
           <p role="alert" className="mb-5 animate-pop rounded-2xl border border-crm-red/15 bg-crm-red-soft px-4 py-3 text-sm text-crm-red-dark">
             {error}
+          </p>
+        )}
+
+        {folioReasignado && (
+          <p role="status" className="mb-5 animate-pop rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            El folio {folioReasignado} ya lo había tomado otro equipo; este expediente quedó con el{' '}
+            <strong>folio {folioActual}</strong>.
           </p>
         )}
 
