@@ -168,6 +168,12 @@ export async function listarEmpresas(): Promise<string[]> {
   return items;
 }
 
+/** Zonas de trabajo sugeridas: las de fábrica más las nuevas ya capturadas en algún expediente. */
+export async function listarZonasTrabajo(): Promise<string[]> {
+  const { items } = await apiFetch<{ items: string[] }>('/expedientes/zonas');
+  return items;
+}
+
 /** Tarjetas de métricas del navegador de expedientes. */
 export async function obtenerEstadisticasExpedientes(): Promise<EstadisticasExpedientes> {
   const r = await apiFetch<{

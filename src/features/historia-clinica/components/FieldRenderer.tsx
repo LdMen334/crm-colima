@@ -2,12 +2,13 @@
 
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Ban, CalendarDays, Lock } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Combobox } from '@/components/ui/Combobox';
 import { Select } from '@/components/ui/Select';
 import { useMedicos } from '@/features/usuarios/useMedicos';
 import { etiquetaMedico } from '../config/medicos';
 import { inputBase, inputReadOnly } from '@/components/ui/styles';
+import { listarZonasTrabajo } from '../api';
 import { CATALOGOS } from '../config/catalogs';
 import { NO_APTO, type FieldDef, type FieldKey, type HistoriaClinicaValues } from '../config/fields';
 import { formatFechaMx } from '../lib/format';
@@ -48,10 +49,15 @@ export function FieldRenderer({ field, onBlur, suggestions, hint }: Props) {
           ? 'colonia'
           : field.key === 'fechaSiguienteValoracion'
             ? 'valoracion'
-            : field.type;
+            : field.key === 'zonaTrabajo'
+              ? 'zona'
+              : field.type;
     switch (especial) {
       case 'medico':
         widget = <MedicoSelect id={id} />;
+        break;
+      case 'zona':
+        widget = <ZonaTrabajoInput id={id} />;
         break;
       case 'colonia':
         widget = (
@@ -230,6 +236,45 @@ function MedicoSelect({ id }: { id: string }) {
         />
       )}
     />
+  );
+}
+
+/**
+ * "Zona de trabajo": texto libre con sugerencias. Las sugerencias son las zonas de
+ * fábrica más las que ya se capturaron en otros expedientes (p. ej. PIHUAMO), así
+ * una zona nueva escrita una vez aparece como opción en los siguientes.
+ */
+function ZonaTrabajoInput({ id }: { id: string }) {
+  const { register } = useFormContext<HistoriaClinicaValues>();
+  const [zonas, setZonas] = useState<readonly string[]>(CATALOGOS.zonasTrabajo);
+
+  useEffect(() => {
+    let vigente = true;
+    // Si falla la red se quedan las de fábrica: el campo sigue aceptando texto libre.
+    listarZonasTrabajo()
+      .then((items) => vigente && setZonas(items))
+      .catch(() => undefined);
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  return (
+    <>
+      <input
+        id={id}
+        type="text"
+        list={`${id}-sugerencias`}
+        autoComplete="off"
+        {...register('zonaTrabajo', { setValueAs: (v: string) => (v ?? '').toUpperCase() })}
+        className={`${inputBase} uppercase`}
+      />
+      <datalist id={`${id}-sugerencias`}>
+        {zonas.map((z) => (
+          <option key={z} value={z} />
+        ))}
+      </datalist>
+    </>
   );
 }
 

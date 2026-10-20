@@ -21,7 +21,7 @@ const RAW = [
   [3, 'nombreCompleto', 'Nombre completo'],
   [4, 'puesto', 'Puesto'],
   [5, 'empresa', 'Empresa (tarjeta de acceso)'],
-  [6, 'zonaTrabajo', 'Zona de trabajo', 'select', 'zonasTrabajo'],
+  [6, 'zonaTrabajo', 'Zona de trabajo', 'text', 'zonasTrabajo'],
   [7, 'tipoExamenMotivo', 'Motivo del Examen', 'select', 'motivoExamen'],
   [8, 'antiguedadEmpresa', 'Antigüedad en la empresa'],
   [9, 'antiguedadPuesto', 'Antigüedad en el puesto'],
