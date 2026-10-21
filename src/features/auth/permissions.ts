@@ -19,7 +19,7 @@ export type Permission =
  * y es también el único que gestiona usuarios, revisa la bitácora y exporta a Excel.
  *
  * ⚠️ Esto oculta la UI; el backend DEBE aplicar la misma regla en los
- * endpoints que generan o sirven PDFs, usuarios, bitácora y reportes (ver README › Seguridad).
+ * endpoints que generan o sirven PDFs, usuarios, bitácora y reportes (ver docs/FUNCIONAMIENTO.md › Seguridad).
  */
 const MATRIX: Record<Role, readonly Permission[]> = {
   ServiciosMedicos: ['expediente:read', 'expediente:write', 'paciente:search', 'perfil:editar'],
