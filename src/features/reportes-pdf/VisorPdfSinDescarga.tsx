@@ -77,9 +77,11 @@ export default function VisorPdfSinDescarga({ documento }: { documento: ReactEle
   }, [documento]);
 
   return (
-    <div className="relative h-full overflow-y-auto" onContextMenu={(e) => e.preventDefault()}>
+    // absolute inset-0: ocupa justo el área del modal (el contenedor es relative) y hace scroll por dentro,
+    // igual que el iframe de PDFViewer; con h-full crecería con las páginas y el modal las recortaría.
+    <div className="absolute inset-0" onContextMenu={(e) => e.preventDefault()}>
       {/* Solo los canvas de pdf.js viven aquí: React nunca renderiza hijos en este div */}
-      <div ref={paginas} className="px-4 pt-4" />
+      <div ref={paginas} className="h-full overflow-y-auto px-4 pt-4" />
       {estado !== 'listo' && (
         <div className="absolute inset-0 grid place-items-center bg-canvas/80 text-sm text-ink-muted">
           {estado === 'cargando' ? (

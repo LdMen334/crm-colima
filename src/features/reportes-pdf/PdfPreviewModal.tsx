@@ -118,7 +118,7 @@ export default function PdfPreviewModal({
             </button>
           </div>
         </header>
-        <div className="flex-1 bg-canvas">
+        <div className="relative min-h-0 flex-1 bg-canvas">
           {puedeDescargar ? (
             <PDFViewer width="100%" height="100%" showToolbar className="border-0">
               {documento}
