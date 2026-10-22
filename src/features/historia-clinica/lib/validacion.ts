@@ -22,40 +22,15 @@ export const CAMPOS_ADVERTENCIA: readonly FieldKey[] = [
 const campoObligatorio = (mensaje: string) => z.string().trim().min(1, mensaje);
 
 /**
- * Reglas del expediente: son obligatorios los campos de "Datos Generales"
- * (Identificación y datos laborales, Datos personales, Domicilio) más el
- * Médico dictaminador / médico que atiende (206). El resto de los 200+
- * campos clínicos sigue siendo opcional.
- *
- * Quedan fuera, aunque viven en la pestaña "Datos Generales": los 2 campos
- * de "Datos del reporte" (Fecha de entrega de resultados la estampa el
- * sistema hasta que se entrega el PDF, no existe al capturar, y Fecha de
- * siguiente valoración ya se autocalcula sola en useAutoCalculos), y Zona
- * de trabajo / Área / Categoría del examen / Exposición (POE), que vuelven
- * a ser opcionales.
- *
- * CURP/NSS: se mantiene "al menos uno de los dos", no ambos obligatorios —
- * no todos los pacientes tienen NSS.
+ * Reglas del expediente: por solicitud del cliente, los únicos campos
+ * obligatorios son el Nombre completo (003), la CURP o el NSS (al menos uno
+ * de los dos: no todos los pacientes tienen NSS) y el Médico dictaminador /
+ * médico que atiende (206). Los otros 200+ campos son opcionales; el backend
+ * aplica las mismas reglas (StoreExpedienteRequest en CR_Backend).
  */
 export const esquemaExpediente = z
   .looseObject({
     nombreCompleto: nombreObligatorio,
-    fechaEstudios: campoObligatorio('La fecha de realización de los estudios es obligatoria.'),
-    puesto: campoObligatorio('El puesto es obligatorio.'),
-    empresa: campoObligatorio('La empresa es obligatoria.'),
-    tipoExamenMotivo: campoObligatorio('Selecciona el motivo del examen.'),
-    antiguedadEmpresa: campoObligatorio('La antigüedad en la empresa es obligatoria.'),
-    antiguedadPuesto: campoObligatorio('La antigüedad en el puesto es obligatoria.'),
-    genero: campoObligatorio('Selecciona el género.'),
-    fechaNacimiento: campoObligatorio('La fecha de nacimiento es obligatoria.'),
-    domicilioCalle: campoObligatorio('La calle y número son obligatorios.'),
-    domicilioColonia: campoObligatorio('La colonia es obligatoria.'),
-    domicilioMunicipio: campoObligatorio('El municipio es obligatorio.'),
-    domicilioEstado: campoObligatorio('El estado es obligatorio.'),
-    telefono: campoObligatorio('El teléfono es obligatorio.'),
-    originario: campoObligatorio('El estado de origen es obligatorio.'),
-    religion: campoObligatorio('Selecciona la religión.'),
-    estadoCivil: campoObligatorio('Selecciona el estado civil.'),
     curp: z.string().trim(),
     nss: z.string().trim(),
     medicoDictaminador: campoObligatorio('Selecciona el médico dictaminador / médico que atiende.'),

@@ -35,7 +35,7 @@ describe('cédula y universidad por rol', () => {
   });
 });
 
-describe('expediente: campos obligatorios (Datos Generales + médico dictaminador)', () => {
+describe('expediente: campos obligatorios (nombre, CURP o NSS y médico dictaminador)', () => {
   /** Expediente con todos los campos de Datos Generales + médico dictaminador completos. */
   const VALIDO = {
     ...EMPTY_VALUES,
@@ -70,8 +70,15 @@ describe('expediente: campos obligatorios (Datos Generales + médico dictaminado
   it('nombre completo: acepta iniciales con punto y rechaza números', async () => {
     expect((await validar({ ...VALIDO, nombreCompleto: 'Paciente 1' })).errors.nombreCompleto?.message).toBe(MENSAJE_NOMBRE);
   });
-  it('exige empresa', async () => {
-    expect((await validar({ ...VALIDO, empresa: '' })).errors.empresa?.message).toBe('La empresa es obligatoria.');
+  it('solo nombre, CURP o NSS y médico dictaminador son obligatorios', async () => {
+    const minimo = {
+      ...EMPTY_VALUES,
+      nombreCompleto: 'Ma. Fernanda Ruiz',
+      nss: '12345678901',
+      medicoDictaminador: 'MANUEL ALEJANDRO CORIA SALAS',
+    };
+    expect((await validar(minimo)).errors).toEqual({});
+    expect((await validar({ ...minimo, nombreCompleto: '' })).errors.nombreCompleto?.message).toBe('Escribe el nombre completo.');
   });
   it('exige al menos uno de CURP/NSS', async () => {
     expect((await validar({ ...VALIDO, curp: '' })).errors.curp?.message).toBe('Captura la CURP o el NSS del paciente.');

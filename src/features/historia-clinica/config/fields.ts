@@ -313,7 +313,7 @@ export const ALL_FIELDS: readonly FieldDef[] = [...FIELDS, ...REPORT_FIELDS];
 export const FIELD_BY_N: ReadonlyMap<number, FieldDef> = new Map(ALL_FIELDS.map((f) => [f.n, f]));
 export const FIELD_BY_KEY: ReadonlyMap<FieldKey, FieldDef> = new Map(ALL_FIELDS.map((f) => [f.key, f]));
 
-/** Todos los valores son strings; vacío = no capturado (ningún campo es obligatorio). */
+/** Todos los valores son strings; vacío = no capturado (solo nombre, CURP/NSS y médico son obligatorios: lib/validacion.ts). */
 export type HistoriaClinicaValues = Record<FieldKey, string>;
 
 export const EMPTY_VALUES = Object.fromEntries(ALL_FIELDS.map((f) => [f.key, ''])) as HistoriaClinicaValues;
