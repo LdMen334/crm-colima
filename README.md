@@ -21,6 +21,7 @@ Este repositorio contiene solo el front-end. Los datos, la autenticación y los 
 | React Hook Form + @hookform/resolvers | 7.89 / 5.9 | Formularios |
 | Zod | 4.6 | Validación |
 | @react-pdf/renderer | 4.9 | Reportes PDF (PECO, TX, SABI) |
+| pdfjs-dist (pdf.js) | 6.4 | Vista previa de PDF sin descarga (Servicios Médicos) |
 | ExcelJS | 4.4 | Exportación a Excel |
 | lucide-react | 1.54 | Iconos |
 | Motion | 13.4 | Animaciones |
@@ -61,15 +62,15 @@ npm run dev                  # http://localhost:3000
 | Módulo | Ruta | Servicios Médicos | Administración |
 |---|---|:---:|:---:|
 | Inicio de sesión | `/login` | ✓ | ✓ |
-| Navegador de expedientes | `/expedientes` | ✓ (solo los propios) | ✓ |
+| Navegador de expedientes | `/expedientes` | ✓ | ✓ |
 | Nueva historia clínica | `/expediente` | ✓ | ✓ |
 | Consultar / editar expediente | `/expediente/{anio}-{folio}` | ✓ | ✓ |
-| Reporte SABI | `/reportes-sabi` | ✓ (sin PDF) | ✓ |
+| Reporte SABI | `/reportes-sabi` | ✓ (vista previa, sin descarga) | ✓ |
 | Mi perfil | `/perfil` | ✓ | ✓ |
 | Usuarios | `/admin/usuarios` | — | ✓ |
 | Bitácora de auditoría | `/admin/bitacora` | — | ✓ |
 | Reporte Excel | `/admin/reportes` | — | ✓ |
-| Reportes PDF oficiales (PECO / TX) | dentro del expediente | — | ✓ |
+| Reportes PDF oficiales (PECO / TX) | dentro del expediente | ✓ (vista previa, sin descarga) | ✓ |
 
 No hay registro público: las cuentas las da de alta Administración.
 

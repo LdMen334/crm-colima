@@ -61,9 +61,16 @@ en `docs/BACKEND.md` §5.
 
 ## Seguridad (importante)
 
-Ocultar botones no basta. Para "Servicios Médicos" el código del generador PDF ni siquiera se descarga
-(import dinámico), y el backend valida el rol en cada endpoint (`role:admin` para usuarios, bitácora, PDF,
-Excel y cierre de año). El rol viene del backend al autenticarse; el selector del login solo indica el perfil
+Ocultar botones no basta: el backend valida el rol en cada endpoint (`role:admin` para usuarios, bitácora,
+datos para PDF, fecha de entrega, Excel y cierre de año).
+
+**Reportes PDF por rol.** Los dos roles ven todos los expedientes y la vista previa de los PDF oficiales
+(PECO / TX) y del Reporte SABI. Solo Administración (`pdf:download`, `reportes-sabi:pdf-download`) ve el botón
+Descargar y el visor del navegador (`PDFViewer`). Para Servicios Médicos la vista previa usa
+`reportes-pdf/VisorPdfSinDescarga.tsx`: genera el PDF en memoria y dibuja cada página como imagen con pdf.js, de
+modo que no aparece ninguna opción de descargar, imprimir ni guardar con Ctrl+S. Esto controla la interfaz, no es
+una barrera de seguridad: quien ve la pantalla siempre puede tomar una captura, y los datos del expediente ya los
+tiene porque puede consultarlo. El rol viene del backend al autenticarse; el selector del login solo indica el perfil
 solicitado. Si se agrega un permiso en `permissions.ts`, debe existir la regla equivalente en el backend.
 
 Los datos clínicos son datos personales sensibles (LFPDPPP): usar HTTPS en producción. La sesión usa un token

@@ -161,9 +161,8 @@ Diagnóstico**. A propósito **no** incluye Laboratorio, Audiometría ni Gabinet
 | `GET /expedientes/{clave}/pdf` | admin | `plantilla=PECO\|TX` | expediente + `plantilla`; bitácora "Consulta" (hoy el front no lo usa: genera el PDF con el expediente ya abierto) |
 | `POST /expedientes/{clave}/entrega` | admin | — | `{ fecha_entrega_resultados }` (hoy, zona México). Se llama justo antes de generar el PDF |
 
-**Visibilidad por rol en `GET /expedientes`:** para `servicios_medicos` el servidor **fuerza**
-`medico_id = usuario actual` (solo ve los expedientes donde es el médico dictaminador); el admin puede filtrar por
-cualquiera o ver todos. Por eso, al crear un expediente, el front precarga al propio médico en
+**Visibilidad en `GET /expedientes`:** los dos roles ven los expedientes de **todos** los médicos; `medico_id` es
+solo un filtro opcional (lo usa el Reporte SABI). Al crear un expediente, el front precarga al propio médico en
 "Médico dictaminador" (`valoresNuevoExpediente`). Orden: `updated_at` descendente.
 
 Fila del navegador:
