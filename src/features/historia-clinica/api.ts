@@ -39,7 +39,7 @@ export interface FiltrosExpedientes {
   hasta?: string;
   tipo?: string;
   empresa?: string;
-  /** Servicios Médicos: el backend lo ignora y fuerza el propio id, sin importar lo que se mande aquí. */
+  /** Filtro opcional por médico dictaminador; sin él se listan los expedientes de todos los médicos. */
   medicoId?: string;
   soloExamenesVisuales?: boolean;
   /** 1-indexada, como la página del backend. */
@@ -94,10 +94,8 @@ export async function siguienteFolio(): Promise<string> {
 /**
  * Valores iniciales de una historia nueva: folio vacío (se completa al llegar la
  * respuesta del servidor), fecha de hoy y, si quien captura es Servicios Médicos,
- * él mismo precargado como "Médico dictaminador" (203/206): el navegador de
- * expedientes de un no-admin solo muestra lo que tiene asignado ese campo
- * (ver ExpedienteController::index), así que si lo deja en blanco su propia
- * atención queda invisible para él mismo aunque sí exista en la base.
+ * él mismo precargado como "Médico dictaminador" (206), que es obligatorio y
+ * casi siempre es quien captura.
  */
 export function valoresNuevoExpediente(user?: SessionUser | null): HistoriaClinicaValues {
   const hoy = new Date();
@@ -183,7 +181,13 @@ export async function obtenerEstadisticasExpedientes(): Promise<EstadisticasExpe
     editados_hoy: number;
     por_tipo: Record<string, number>;
   }>('/expedientes/estadisticas');
-  return { total: r.total, ultimos7Dias: r.ultimos_7_dias, hoy: r.hoy, editadosHoy: r.editados_hoy, porTipo: r.por_tipo };
+  return {
+    total: r.total,
+    ultimos7Dias: r.ultimos_7_dias,
+    hoy: r.hoy,
+    editadosHoy: r.editados_hoy,
+    porTipo: r.por_tipo,
+  };
 }
 
 /**

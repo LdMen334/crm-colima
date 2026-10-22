@@ -14,15 +14,23 @@ export type Permission =
   | 'reportes-sabi:pdf-download';
 
 /**
- * Matriz de permisos. "Servicios Médicos" captura y consulta, pero nunca
- * ve, descarga ni emite reportes oficiales. Solo "Leo" (Administración) puede,
- * y es también el único que gestiona usuarios, revisa la bitácora y exporta a Excel.
+ * Matriz de permisos. "Servicios Médicos" captura, consulta y ve la vista
+ * previa de los reportes oficiales (PECO / TX y SABI), pero nunca los descarga
+ * ni los emite. Solo "Leo" (Administración) puede descargarlos, y es también
+ * el único que gestiona usuarios, revisa la bitácora y exporta a Excel.
  *
  * ⚠️ Esto oculta la UI; el backend DEBE aplicar la misma regla en los
  * endpoints que generan o sirven PDFs, usuarios, bitácora y reportes (ver docs/FUNCIONAMIENTO.md › Seguridad).
  */
 const MATRIX: Record<Role, readonly Permission[]> = {
-  ServiciosMedicos: ['expediente:read', 'expediente:write', 'paciente:search', 'perfil:editar'],
+  ServiciosMedicos: [
+    'expediente:read',
+    'expediente:write',
+    'paciente:search',
+    'pdf:preview',
+    'pdf:template-select',
+    'perfil:editar',
+  ],
   Leo: [
     'expediente:read',
     'expediente:write',

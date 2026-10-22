@@ -11,12 +11,13 @@ import { marcarEntregaResultados } from '@/features/historia-clinica/api';
 import { PlantillaSelector } from './PlantillaSelector';
 import type { PlantillaId } from './templates/config';
 
-// El motor PDF solo se descarga cuando se abre el modal (nunca para Servicios Médicos)
+// El motor PDF solo se descarga cuando se abre el modal
 const PdfPreviewModal = dynamic(() => import('./PdfPreviewModal'), { ssr: false });
 
 /**
- * Barra de reportes oficiales. Para cualquier rol distinto de "Leo" no
- * renderiza nada: ni botones, ni selector, ni el código del generador PDF.
+ * Barra de reportes oficiales. Sin `pdf:preview` no renderiza nada; con él
+ * muestra el selector de plantilla y la vista previa, y el botón Descargar
+ * solo si además tiene `pdf:download` (hoy, solo "Leo").
  *
  * @param clave clave de ruta "{anio}-{folio}" del expediente ya guardado, o
  *              `undefined` si todavía no se ha guardado (entonces no hay
@@ -24,11 +25,11 @@ const PdfPreviewModal = dynamic(() => import('./PdfPreviewModal'), { ssr: false 
  */
 export function PdfActionBar({ clave }: { clave?: string }) {
   const { user } = useAuth();
-  if (!can(user?.role, 'pdf:preview')) return null; // role !== 'Leo'
-  return <PdfActionBarInner clave={clave} />;
+  if (!can(user?.role, 'pdf:preview')) return null;
+  return <PdfActionBarInner clave={clave} puedeDescargar={can(user?.role, 'pdf:download')} />;
 }
 
-function PdfActionBarInner({ clave }: { clave?: string }) {
+function PdfActionBarInner({ clave, puedeDescargar }: { clave?: string; puedeDescargar: boolean }) {
   const { getValues, setValue } = useFormContext<HistoriaClinicaValues>();
   const [plantilla, setPlantilla] = useState<PlantillaId>('PECO');
   const [open, setOpen] = useState(false);
@@ -63,18 +64,27 @@ function PdfActionBarInner({ clave }: { clave?: string }) {
           <FileText className="h-4 w-4 text-med-blue" />
           Vista previa PDF
         </button>
-        <button
-          type="button"
-          onClick={download}
-          disabled={downloading}
-          aria-label={`Descargar PDF ${plantilla}`}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-navy px-4 text-sm font-medium text-white transition-colors hover:bg-navy-2 active:scale-[0.97] disabled:opacity-70"
-        >
-          {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          <span className="hidden sm:inline">Descargar</span>
-        </button>
+        {puedeDescargar && (
+          <button
+            type="button"
+            onClick={download}
+            disabled={downloading}
+            aria-label={`Descargar PDF ${plantilla}`}
+            className="flex h-9 items-center gap-1.5 rounded-full bg-navy px-4 text-sm font-medium text-white transition-colors hover:bg-navy-2 active:scale-[0.97] disabled:opacity-70"
+          >
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            <span className="hidden sm:inline">Descargar</span>
+          </button>
+        )}
       </div>
-      {open && <PdfPreviewModal plantilla={plantilla} onPlantilla={setPlantilla} onClose={() => setOpen(false)} clave={clave} />}
+      {open && (
+        <PdfPreviewModal
+          plantilla={plantilla}
+          onPlantilla={setPlantilla}
+          onClose={() => setOpen(false)}
+          clave={clave}
+        />
+      )}
     </>
   );
 }
