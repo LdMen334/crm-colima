@@ -2,7 +2,7 @@ import { MEDICOS_DICTAMINADORES } from './medicos';
 
 /**
  * Catálogos pre-cargados.
- *  - En campos `select` se muestran como lista cerrada (con opción vacía: nada es obligatorio).
+ *  - En campos `select` se muestran como lista cerrada (con opción vacía: el campo puede quedar sin capturar).
  *  - En campos `text` con catálogo se ofrecen como sugerencias, pero se permite texto libre.
  */
 export const CATALOGOS = {

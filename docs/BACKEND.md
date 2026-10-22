@@ -53,13 +53,13 @@ listos para mostrarse.
 
 | HTTP | `code` | Cuándo |
 |---|---|---|
+| 400 | `VALIDATION_ERROR` | Validación; `fields` trae el mensaje por campo (snake_case) |
 | 401 | `UNAUTHENTICATED` | Sin token, token vencido o revocado por otro login |
 | 401 | `INVALID_CREDENTIALS` | Correo o contraseña incorrectos en el login |
 | 403 | `FORBIDDEN` | Rol sin permiso, cuenta inactiva, perfil equivocado en el login |
 | 403 | `PASSWORD_CHANGE_REQUIRED` | La cuenta tiene contraseña temporal y llamó un endpoint distinto de `/auth/*` o `/me*` |
 | 404 | `NOT_FOUND` | Recurso o clave de expediente inexistente |
 | 409 | `CONFLICT` | Correo duplicado, último admin activo, o choque de guardado simultáneo ("Otro equipo guardó al mismo tiempo…") |
-| 422 | `VALIDATION_ERROR` | Validación; `fields` trae el mensaje por campo (snake_case) |
 | 429 | `TOO_MANY_REQUESTS` | Login: más de 5 intentos/min por IP **y** por cuenta |
 | 500 | `INTERNAL_ERROR` | Nunca expone detalles internos |
 
@@ -211,15 +211,12 @@ Es un objeto **plano** en snake_case con las columnas de todos los módulos (lo 
 - Calculados por el servidor (se ignoran si se envían): `edad`, `grupo_edad`, `ta_conjunta`, `imc`,
   `estado_nutricional`, `folio`, `anio`, `folio_anual`, `fecha_estudios`.
 
-### Campos obligatorios (422 si faltan)
+### Campos obligatorios (400 si faltan)
 
-`nombre_completo`, `curp` **o** `nss` (al menos uno), `fecha_nacimiento`, `genero`, `originario`,
-`domicilio_calle`, `domicilio_colonia`, `domicilio_municipio`, `domicilio_estado`, `puesto`, `empresa`,
-`tipo_examen_motivo`, `antiguedad_empresa`, `antiguedad_puesto`, `telefono`, `religion`, `estado_civil`,
-`medico_dictaminador`.
+Por solicitud del cliente, solo tres: `nombre_completo`, `curp` **o** `nss` (al menos uno) y `medico_dictaminador`.
+Todos los demás son opcionales; si se envían, se valida su formato (catálogos, fechas, números).
 
-El front aplica las mismas reglas antes de enviar (`features/historia-clinica/lib/validacion.ts`, más
-`fecha_estudios`). Los campos de `CAMPOS_ADVERTENCIA` (grupo Rh, gradiente y los 6 antidoping) **no bloquean**: solo
+El front aplica las mismas reglas antes de enviar (`features/historia-clinica/lib/validacion.ts`). Los campos de `CAMPOS_ADVERTENCIA` (grupo Rh, gradiente y los 6 antidoping) **no bloquean**: solo
 se muestra un aviso.
 
 ### Catálogos cerrados que valida el backend
@@ -241,7 +238,7 @@ deben coincidir con `zonasTrabajo` del front): ALZADA, AQUILA, CLUB SOCIAL, COLI
 PRESAS, TECOMÁN, TERNIUM. El servidor las normaliza a mayúsculas y unifica variantes sin acento ("tecoman" → "TECOMÁN").
 
 **Si se agrega o cambia un catálogo, hay que tocar los dos repos:** `config/catalogs.ts` en el front y
-`StoreExpedienteRequest.php` en el backend; si no, el backend responderá 422.
+`StoreExpedienteRequest.php` en el backend; si no, el backend responderá 400.
 
 ## 6. Modelo de datos (resumen)
 

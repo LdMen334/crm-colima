@@ -16,7 +16,7 @@ export const nombreObligatorio = z
   .min(1, 'Escribe el nombre completo.')
   .regex(NOMBRE_RE, MENSAJE_NOMBRE);
 
-/** Nombre del paciente: opcional en el expediente (ningún campo es obligatorio), pero con formato si se escribe. */
+/** Nombre opcional: vacío permitido, pero con formato si se escribe. */
 export const nombreOpcional = z
   .string()
   .trim()

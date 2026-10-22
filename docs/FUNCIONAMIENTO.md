@@ -47,9 +47,8 @@ node scripts/build-cp-inegi.mjs /tmp/inegi
 El CP vive solo en el estado local de `CpAssistant`; no se registra en el formulario,
 así que es imposible que llegue al expediente o al PDF. Estado, municipio y colonia siguen siendo editables.
 
-**Campos obligatorios del expediente.** Los de "Datos Generales" (identificación y datos laborales, datos
-personales, domicilio) más el Médico dictaminador (206); CURP **o** NSS (al menos uno). Zona de trabajo, Área,
-Categoría del examen y Exposición (POE) son opcionales. Grupo Rh, Gradiente y los 6 antidoping no bloquean el
+**Campos obligatorios del expediente.** Por solicitud del cliente, solo tres: Nombre completo (003), CURP **o**
+NSS (al menos uno) y Médico dictaminador (206). Todos los demás son opcionales. Grupo Rh, Gradiente y los 6 antidoping no bloquean el
 guardado: solo muestran un aviso (`CAMPOS_ADVERTENCIA`). Las reglas viven en `historia-clinica/lib/validacion.ts`
 (Zod) y **se repiten en el backend** (`StoreExpedienteRequest.php`): si se cambia una, cambiar ambas. Lista exacta
 en `docs/BACKEND.md` §5.
