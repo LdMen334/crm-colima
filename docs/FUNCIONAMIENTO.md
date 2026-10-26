@@ -81,9 +81,19 @@ servidor. No guardar datos de pacientes en `localStorage` ni en logs del navegad
 
 Ambas replican los reportes oficiales impresos (`Reporte_Folio_106` = PECO, `Reporte_Folio_108` = TX):
 márgenes, paleta, celdas de etiqueta en color con texto blanco, rótulos de grupo (Tórax, Abdomen, Ojos…)
-y gráfica de audiometría. Generan **3 hojas**:
-Historia Clínica, Pruebas Complementarias (drogas en orina y grupo Rh con sus leyendas) y Exámenes Visuales
+y gráfica de audiometría. Generan **4 páginas**:
+Historia Clínica (2 páginas), Pruebas Complementarias (drogas en orina y grupo Rh con sus leyendas) y Exámenes Visuales
 (firma del oftalmólogo). Los campos vacíos se imprimen como `---` y las fechas como DD/MM/AAAA, igual que en los originales.
+
+**Paginación fija.** Como en los formatos oficiales, la página 1 de la historia clínica termina en *Ojos* y la página 2
+empieza en *Oídos* (`ExploracionRegional2` lleva `break`) y termina con el médico dictaminador y la firma. Ningún bloque
+se parte entre páginas. Para que la altura no dependa de lo capturado, las celdas no crecen con textos largos: reducen la
+letra hasta que el texto quepa, igual que "Reducir hasta ajustar" de Excel (`templates/ajuste.ts`, que mide con las
+métricas de Helvetica). Las etiquetas se parten entre palabras, sin guiones.
+
+**Filas que no van en el PDF.** VCM, MCH, MCHC y MPV (biometría), Urobilinógeno y Eritrocitos (orina) y, en TX, el
+"Examen con lentes" del bloque Ojos no aparecen en los formatos oficiales, así que no se imprimen en la historia clínica.
+Se siguen capturando y se exportan al Excel; el examen con lentes sí sale en la hoja de Exámenes Visuales.
 
 | | PECO | TX |
 |---|---|---|
