@@ -154,3 +154,5 @@ Si se requiere firma digital, debe aplicarla el propio médico (p. ej. firma ele
 - **Escolaridad**: el Excel TX usa "COMPLETA" y llega hasta doctorado; se mantuvo el catálogo indicado ("Terminada", hasta Maestría / Postgrado).
 - **Fechas del Excel** mezclan formatos (4/20/1971 es mes/día; 6/1/1968 es día/mes según la CURP). Revisar antes de migrar datos históricos.
 - Retirar `src/lib/local-db.ts` (mover `todayIso()` a un módulo de utilidades) ahora que todo usa la API.
+  Al 2026-11-07 aún lo importan `auditoria/BitacoraPanel.tsx`, `reportes-excel/ReporteExcelPanel.tsx` y
+  `reportes-sabi/ReporteSabiPanel.tsx` (solo por `todayIso`).

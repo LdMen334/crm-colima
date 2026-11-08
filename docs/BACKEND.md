@@ -1,8 +1,12 @@
 # Contexto del backend (CR_Backend) para el desarrollo del front
 
-> **Sincronizado con:** `CR_Backend` @ `4a90297` (rama `develop`, 21-oct-2026) y `crm-colima` @ `f2d78ce`
-> (rama `develop`, 20-oct-2026). Si alguno de los dos repos avanza, revisar `routes/api.php`,
-> `app/Http/Controllers/Api/V1/` y `app/Http/Requests/StoreExpedienteRequest.php` y actualizar este archivo.
+> **Sincronizado con:** `CR_Backend` @ `b54b3b8` (rama `develop`, 21-oct-2026) y `crm-colima` @ `74fc45d`
+> (rama `develop`, 25-oct-2026). Revalidado contra `routes/api.php` el 2026-11-07. Si alguno de los dos repos
+> avanza, revisar `routes/api.php`, `app/Http/Controllers/Api/V1/` y
+> `app/Http/Requests/StoreExpedienteRequest.php` y actualizar este archivo.
+>
+> El `README.md` del backend resume los endpoints; el detalle del contrato vive aquí. Estado de ramas y
+> pendientes: `../CR_Backend/CONTEXTO_BACKEND.md`.
 
 El backend es una API REST en **Laravel 13 + PHP 8.4 + PostgreSQL 16**, autenticada con **tokens Bearer de
 Sanctum**. Vive en el repositorio hermano `CR_Backend` (en esta máquina: `../CR_Backend`). El front ya no usa
