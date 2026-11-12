@@ -26,6 +26,18 @@ export function setToken(token: string | null): void {
   }
 }
 
+/**
+ * Se emite en `window` cuando el backend rechaza el token (sesión reemplazada
+ * por otro login, vencida por inactividad o inexistente). `detail.codigo` trae
+ * el código del backend; `AuthProvider` cierra la sesión local y manda al login.
+ */
+export const SESION_TERMINADA = 'crm-hc:sesion-terminada';
+export type CodigoSesion = 'SESSION_REPLACED' | 'SESSION_EXPIRED' | 'UNAUTHENTICATED';
+const CODIGOS_SESION: readonly string[] = ['SESSION_REPLACED', 'SESSION_EXPIRED', 'UNAUTHENTICATED'];
+// En estas rutas un 401 no significa "se cerró tu sesión": el login responde
+// credenciales incorrectas y el logout ya está cerrando la sesión.
+const RUTAS_SIN_AVISO = ['/auth/login', '/auth/logout'];
+
 interface ApiErrorBody {
   error?: { code?: string; message?: string; fields?: Record<string, string> };
 }
@@ -68,11 +80,21 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-  const res = await fetch(buildUrl(path, query), {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(buildUrl(path, query), {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    // Sin internet, servidor caído o bloqueo del navegador: en lugar del texto
+    // crudo ("Load failed" / "Failed to fetch") se da un mensaje entendible.
+    throw new ApiError(
+      'No se pudo conectar con el servidor. Revisa tu conexión a internet e inténtalo de nuevo.',
+      'NETWORK_ERROR',
+    );
+  }
 
   if (res.status === 204) return undefined as T;
 
@@ -80,6 +102,12 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
   if (!res.ok) {
     const err = (data as ApiErrorBody).error;
+    if (res.status === 401 && err?.code && CODIGOS_SESION.includes(err.code) && !RUTAS_SIN_AVISO.includes(path)) {
+      setToken(null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(SESION_TERMINADA, { detail: { codigo: err.code as CodigoSesion } }));
+      }
+    }
     throw new ApiError(err?.message ?? 'Ocurrió un error inesperado.', err?.code, err?.fields, res.status);
   }
 

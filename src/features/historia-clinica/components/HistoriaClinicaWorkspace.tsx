@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
-import { ArrowLeft, Check, FilePlus2, Loader2, RotateCcw, Save, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, Check, FilePlus2, History, Loader2, RotateCcw, Save, UserCheck, X } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { btnPrimary, btnSecondary } from '@/components/ui/styles';
 import { Badge } from '@/components/ui/Badge';
@@ -19,6 +19,25 @@ import { ClinicalSummaryPanel } from './ClinicalSummaryPanel';
 import { PatientSearch } from '@/features/pacientes/PatientSearch';
 import { usePacienteRecurrente } from '@/features/pacientes/usePacienteRecurrente';
 import { PdfActionBar } from '@/features/reportes-pdf/PdfActionBar';
+import { borrarBorrador, guardarBorrador, leerBorrador, ranura, type Borrador } from '@/features/borrador/borrador';
+import { SESION_TERMINADA } from '@/lib/api-client';
+
+/** Espera tras la última tecla antes de cifrar y guardar el borrador. */
+const ESPERA_BORRADOR_MS = 800;
+
+/** Campos que difieren de los valores de referencia (lo guardado o la plantilla nueva). */
+type Cambios = Partial<HistoriaClinicaValues>;
+
+// Los fija el servidor: que cambie la vista previa del folio no es una captura del médico.
+const NO_CUENTAN = new Set<FieldKey>(['folio', 'fechaEstudios']);
+
+function cambiosSinGuardar(valores: HistoriaClinicaValues, referencia?: Partial<HistoriaClinicaValues>): Cambios | null {
+  const cambios: Cambios = {};
+  for (const [k, v] of Object.entries(valores) as [FieldKey, string][]) {
+    if (!NO_CUENTAN.has(k) && (v ?? '') !== (referencia?.[k] ?? '')) cambios[k] = v;
+  }
+  return Object.keys(cambios).length ? cambios : null;
+}
 
 type Carga = 'cargando' | 'listo' | 'no-encontrado';
 
@@ -27,7 +46,7 @@ type Carga = 'cargando' | 'listo' | 'no-encontrado';
  * Con `folio`: abre el expediente guardado (queda registrado como "Consulta").
  */
 export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
-  const { user } = useAuth();
+  const { user, llaveLista } = useAuth();
   // Sin reglas de validación: los 206 campos son opcionales.
   const [iniciales] = useState(() => valoresNuevoExpediente(user));
   const form = useForm<HistoriaClinicaValues>({ defaultValues: iniciales, resolver: resolverExpediente });
@@ -46,6 +65,84 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
   /** Folio que se mostraba antes del primer guardado, si el servidor terminó asignando otro. */
   const [folioReasignado, setFolioReasignado] = useState<string | null>(null);
   const recurrente = usePacienteRecurrente(form, carga === 'listo' && !guardado);
+  // Leer isDirty en el render suscribe el componente a ese estado (react-hook-form).
+  const { isDirty } = form.formState;
+  /** Borrador de una captura anterior que no llegó al servidor, ofrecido para recuperar. */
+  const [borradorOfrecido, setBorradorOfrecido] = useState<Borrador<Cambios> | null>(null);
+  /** Ya se revisó si había borrador (y se recuperó o descartó): desde aquí se puede autoguardar. */
+  const [borradorRevisado, setBorradorRevisado] = useState(false);
+  // Ranura: el expediente nuevo de la cuenta o, si ya existe en la base, su clave.
+  const ranuraActual = user ? ranura(user.id, guardado ? claveActual : null) : null;
+  const autoguardar = carga === 'listo' && borradorRevisado && llaveLista && !!ranuraActual;
+
+  // Al abrir la pantalla (o pulsar "Nueva") se busca un borrador de esa ranura.
+  useEffect(() => {
+    if (carga !== 'listo' || !ranuraActual || !llaveLista || borradorRevisado) return;
+    let cancelled = false;
+    leerBorrador<Cambios>(ranuraActual).then((b) => {
+      if (cancelled) return;
+      setBorradorOfrecido(b);
+      if (!b) setBorradorRevisado(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [carga, ranuraActual, llaveLista, borradorRevisado]);
+
+  // Autoguardado cifrado de lo que no está en el servidor: 0.8 s después de cada
+  // cambio y, sin esperar, cuando la sesión se cierra, la ventana se oculta o se
+  // cierra, o el médico sale de la pantalla. Solo se guardan los campos que
+  // difieren de lo que hay en el servidor (o de la plantilla del expediente nuevo).
+  const pendiente = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!autoguardar || !ranuraActual) return;
+    const id = ranuraActual;
+    const guardarAhora = () => {
+      if (pendiente.current) clearTimeout(pendiente.current);
+      pendiente.current = null;
+      const cambios = cambiosSinGuardar(form.getValues(), form.formState.defaultValues);
+      if (cambios) void guardarBorrador(id, cambios);
+      else borrarBorrador(id);
+    };
+    // Solo si hay algo pendiente: lo demás ya está guardado.
+    const vaciar = () => {
+      if (pendiente.current) guardarAhora();
+    };
+    const alOcultar = () => {
+      if (document.visibilityState === 'hidden') vaciar();
+    };
+    const sub = form.watch(() => {
+      if (pendiente.current) clearTimeout(pendiente.current);
+      pendiente.current = setTimeout(guardarAhora, ESPERA_BORRADOR_MS);
+    });
+    window.addEventListener(SESION_TERMINADA, vaciar);
+    window.addEventListener('pagehide', vaciar);
+    document.addEventListener('visibilitychange', alOcultar);
+    return () => {
+      sub.unsubscribe();
+      window.removeEventListener(SESION_TERMINADA, vaciar);
+      window.removeEventListener('pagehide', vaciar);
+      document.removeEventListener('visibilitychange', alOcultar);
+      vaciar();
+    };
+  }, [autoguardar, ranuraActual, form]);
+
+  function recuperarBorrador() {
+    if (!borradorOfrecido) return;
+    // Se aplican solo los campos que se habían cambiado, encima de lo que hay hoy
+    // en el servidor; folio y fecha de realización no se tocan (los fija el servidor).
+    for (const [k, v] of Object.entries(borradorOfrecido.values) as [FieldKey, string][]) {
+      if (!NO_CUENTAN.has(k)) form.setValue(k, v, { shouldDirty: true });
+    }
+    setBorradorOfrecido(null);
+    setBorradorRevisado(true);
+  }
+
+  function descartarBorrador() {
+    if (ranuraActual) borrarBorrador(ranuraActual);
+    setBorradorOfrecido(null);
+    setBorradorRevisado(true);
+  }
 
   useEffect(() => {
     if (!folio || !user) return;
@@ -83,6 +180,8 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
     setClaveActual(undefined);
     setSavedAt(null);
     setFolioReasignado(null);
+    setBorradorOfrecido(null);
+    setBorradorRevisado(false);
     window.history.replaceState(null, '', '/expediente');
     siguienteFolio().then((f) => form.setValue('folio', f));
   }
@@ -92,8 +191,17 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
     const esPrimerGuardado = !guardado;
     setSaving(true);
     setError(null);
+    // Antes de enviar, el borrador queda al día: si se va el internet o la sesión
+    // ya no es válida, lo último capturado no se pierde.
+    const ranuraEnvio = autoguardar ? ranuraActual : null;
+    if (pendiente.current) clearTimeout(pendiente.current);
+    pendiente.current = null;
+    const cambios = cambiosSinGuardar(values, form.formState.defaultValues);
+    if (ranuraEnvio && cambios) await guardarBorrador(ranuraEnvio, cambios);
     try {
       const exp = await guardarExpediente(values, user, guardado ? (claveActual ?? null) : null);
+      // Ya está en el servidor: el borrador sobra.
+      if (ranuraEnvio) borrarBorrador(ranuraEnvio);
       form.reset(exp.values);
       setSavedAt(new Date(exp.actualizadoEn));
       const claveNueva = clave(exp.anio, exp.folio);
@@ -172,6 +280,32 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
           <PdfActionBar clave={claveActual} />
         </div>
 
+        {borradorOfrecido && (
+          <div
+            role="status"
+            className="mb-5 flex animate-pop flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+          >
+            <p className="flex items-center gap-2">
+              <History className="h-4 w-4 shrink-0" />
+              <span>
+                {guardado ? 'Tienes cambios sin guardar en este expediente del' : 'Tienes un expediente nuevo sin guardar del'}{' '}
+                <strong>
+                  {borradorOfrecido.guardadoEn.toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                </strong>
+                {!guardado && borradorOfrecido.values.nombreCompleto ? ` · ${borradorOfrecido.values.nombreCompleto}` : ''}.
+              </span>
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={descartarBorrador} className={btnSecondary}>
+                Descartar
+              </button>
+              <button type="button" onClick={recuperarBorrador} className={btnPrimary}>
+                <RotateCcw className="h-4 w-4" /> Recuperar
+              </button>
+            </div>
+          </div>
+        )}
+
         {error && (
           <p role="alert" className="mb-5 animate-pop rounded-2xl border border-crm-red/15 bg-crm-red-soft px-4 py-3 text-sm text-crm-red-dark">
             {error}
@@ -207,7 +341,7 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
         <div className="mb-5 flex flex-wrap items-center gap-3">
           {!guardado && <PatientSearch onSelect={recurrente.aplicarDesdeBusqueda} />}
           <div className="ml-auto flex items-center gap-2">
-            {savedAt && !form.formState.isDirty && (
+            {savedAt && !isDirty && (
               <span className="flex animate-fade items-center gap-1 text-xs text-emerald-700">
                 <Check className="h-3.5 w-3.5" />
                 Guardado {savedAt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
