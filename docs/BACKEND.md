@@ -1,8 +1,12 @@
 # Contexto del backend (CR_Backend) para el desarrollo del front
 
-> **Sincronizado con:** `CR_Backend` @ `4a90297` (rama `develop`, 21-oct-2026) y `crm-colima` @ `f2d78ce`
-> (rama `develop`, 20-oct-2026). Si alguno de los dos repos avanza, revisar `routes/api.php`,
-> `app/Http/Controllers/Api/V1/` y `app/Http/Requests/StoreExpedienteRequest.php` y actualizar este archivo.
+> **Sincronizado con:** `CR_Backend` @ `b54b3b8` (rama `develop`, 21-oct-2026) y `crm-colima` @ `74fc45d`
+> (rama `develop`, 25-oct-2026). Revalidado contra `routes/api.php` el 2026-11-07. Si alguno de los dos repos
+> avanza, revisar `routes/api.php`, `app/Http/Controllers/Api/V1/` y
+> `app/Http/Requests/StoreExpedienteRequest.php` y actualizar este archivo.
+>
+> El `README.md` del backend resume los endpoints; el detalle del contrato vive aquí. Estado de ramas y
+> pendientes: `../CR_Backend/CONTEXTO_BACKEND.md`.
 
 El backend es una API REST en **Laravel 13 + PHP 8.4 + PostgreSQL 16**, autenticada con **tokens Bearer de
 Sanctum**. Vive en el repositorio hermano `CR_Backend` (en esta máquina: `../CR_Backend`). El front ya no usa
@@ -32,8 +36,8 @@ docker compose exec app php artisan migrate --seed   # imprime UNA sola vez la c
 |---|---|
 | Base | `/api/v1` |
 | Autenticación | `Authorization: Bearer <token>` (se obtiene en `POST /auth/login`). El front lo guarda en `sessionStorage` (`crm-hc-token`) |
-| Sesión única | Cada login revoca **todos** los tokens anteriores de esa cuenta. Si un usuario entra en otro equipo, el primero recibe 401 |
-| Expiración | 480 min (8 h) — `SANCTUM_TOKEN_EXPIRATION_MINUTES` |
+| Sesión única | Cada login deja sin efecto los tokens anteriores de esa cuenta. Si un usuario entra en otro equipo o pestaña, el primero recibe 401 `SESSION_REPLACED` |
+| Expiración | Vence tras **60 min sin actividad** (`SESION_INACTIVIDAD_MINUTOS`); cada petición la extiende salvo `GET /auth/sesion`. Tope absoluto 480 min (8 h) desde el login (`SANCTUM_TOKEN_EXPIRATION_MINUTES`) |
 | Zona horaria de negocio | `America/Mexico_City` (fechas de estudio, jornada del Excel, estadísticas "hoy") |
 | Fechas | Entrada y salida `AAAA-MM-DD`; marcas de tiempo en ISO 8601 |
 | Nombres de campos | `snake_case`. El front convierte con `toDbPayload()` / `fromDbPayload()` (`features/historia-clinica/lib/db-mapping.ts`) |
@@ -54,7 +58,9 @@ listos para mostrarse.
 | HTTP | `code` | Cuándo |
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | Validación; `fields` trae el mensaje por campo (snake_case) |
-| 401 | `UNAUTHENTICATED` | Sin token, token vencido o revocado por otro login |
+| 401 | `SESSION_REPLACED` | La cuenta inició sesión en otro equipo o pestaña |
+| 401 | `SESSION_EXPIRED` | La sesión venció (1 h sin actividad o tope de 8 h) |
+| 401 | `UNAUTHENTICATED` | Sin token o token inexistente |
 | 401 | `INVALID_CREDENTIALS` | Correo o contraseña incorrectos en el login |
 | 403 | `FORBIDDEN` | Rol sin permiso, cuenta inactiva, perfil equivocado en el login |
 | 403 | `PASSWORD_CHANGE_REQUIRED` | La cuenta tiene contraseña temporal y llamó un endpoint distinto de `/auth/*` o `/me*` |
@@ -102,11 +108,16 @@ Rol: **todos** = cualquier usuario autenticado y activo sin contraseña temporal
 
 | Método y ruta | Rol | Cuerpo / query | Respuesta |
 |---|---|---|---|
-| `POST /auth/login` | público | `{ email, password, perfil: "admin" \| "servicios_medicos" }` | `{ user, token, redirect: "/perfil" \| "/expedientes" }` |
+| `POST /auth/login` | público | `{ email, password, perfil: "admin" \| "servicios_medicos" }` | `{ user, token, llave_borrador, redirect: "/perfil" \| "/expedientes" }` |
 | `POST /auth/logout` | cualquiera | — | 204 (revoca solo el token actual) |
-| `GET /auth/me` | cualquiera | — | `{ user }` |
+| `GET /auth/me` | cualquiera | — | `{ user, llave_borrador }` |
+| `GET /auth/sesion` | cualquiera | — | `{ vence_en }` (ISO 8601). Revisión periódica del front; **no** cuenta como actividad |
 | `PUT /me` | cualquiera | `{ nombre_completo, email, cedula_profesional?, universidad? }` | `{ user }` (el rol nunca cambia aquí) |
 | `POST /me/password` | cualquiera | `{ actual, nueva }` | `{ user }` y apaga `is_temporary_password` |
+
+`llave_borrador`: 32 bytes aleatorios en base64, estable por cuenta (no cambia en cada login) y guardada cifrada
+en la base. El front la usa para cifrar con AES-GCM el borrador de un expediente nuevo sin enviar (ver
+`docs/FUNCIONAMIENTO.md` §Seguridad). Nunca viaja dentro de `user`.
 
 Login — orden de validación y mensajes: credenciales → cuenta inactiva ("Tu cuenta está inactiva…") → perfil
 elegido vs. rol real ("Esta cuenta no tiene acceso de Administración…" / "Esta es una cuenta de Administración…").

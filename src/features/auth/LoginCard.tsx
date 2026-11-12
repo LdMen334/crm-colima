@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, Stethoscope } from 'lucide-react';
-import { useAuth } from './AuthProvider';
+import { tomarMotivoSalida, useAuth } from './AuthProvider';
+import { borradoresDe } from '@/features/borrador/borrador';
 import { AuthField, AuthShell, authSubmit } from './AuthShell';
 import type { Role } from './types';
 
@@ -24,6 +25,12 @@ export function LoginCard() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Por qué se cerró la sesión anterior (otro equipo, inactividad), si fue el caso. */
+  const [motivo, setMotivo] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMotivo(tomarMotivoSalida());
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -31,8 +38,12 @@ export function LoginCard() {
     setLoading(true);
     try {
       const u = await login(email, password, perfil);
-      // Con contraseña temporal (asignada por Administración) se pide cambiarla primero
-      router.replace(u.passwordTemporal ? '/perfil' : '/expedientes');
+      // Con contraseña temporal (asignada por Administración) se pide cambiarla primero.
+      // Si dejó capturas sin guardar, se le lleva directo a recuperarlas (primero el expediente nuevo).
+      const [pendiente] = borradoresDe(u.id);
+      const destino =
+        pendiente === undefined ? '/expedientes' : pendiente === null ? '/expediente' : `/expediente/${pendiente}`;
+      router.replace(u.passwordTemporal ? '/perfil' : destino);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No fue posible iniciar sesión.');
       setLoading(false);
@@ -114,6 +125,12 @@ export function LoginCard() {
             }
           />
         </div>
+
+        {motivo && !error && (
+          <p role="status" className="mt-4 animate-pop rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {motivo}
+          </p>
+        )}
 
         {error && (
           <p role="alert" className="mt-4 animate-pop rounded-2xl border border-crm-red/15 bg-crm-red-soft px-4 py-3 text-sm text-crm-red-dark">
