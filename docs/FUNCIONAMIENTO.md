@@ -73,9 +73,33 @@ una barrera de seguridad: quien ve la pantalla siempre puede tomar una captura, 
 tiene porque puede consultarlo. El rol viene del backend al autenticarse; el selector del login solo indica el perfil
 solicitado. Si se agrega un permiso en `permissions.ts`, debe existir la regla equivalente en el backend.
 
-Los datos clínicos son datos personales sensibles (LFPDPPP): usar HTTPS en producción. La sesión usa un token
-Bearer de Sanctum en `sessionStorage` (sesión única por cuenta, 8 h); la bitácora de accesos la escribe solo el
-servidor. No guardar datos de pacientes en `localStorage` ni en logs del navegador.
+Los datos clínicos son datos personales sensibles (LFPDPPP): usar HTTPS en producción. La bitácora de accesos la
+escribe solo el servidor. No guardar datos de pacientes en `localStorage` ni en logs del navegador, **salvo el
+borrador cifrado** descrito abajo.
+
+**Sesión (decisión del dueño, 2026-11-12).** Token Bearer de Sanctum en `sessionStorage` (por pestaña). Una sesión por
+cuenta y por pestaña: cada médico tiene su propia cuenta y entrar en otro equipo **o en otra pestaña** cierra la anterior
+(no se comparte entre pestañas, a propósito). La sesión vence tras **1 hora sin actividad** (tope 8 h desde el login).
+- `apiFetch` detecta en un solo lugar el 401 de sesión (`SESSION_REPLACED`, `SESSION_EXPIRED`, `UNAUTHENTICATED`),
+  borra el token y emite `SESION_TERMINADA`; `AuthProvider` limpia la sesión y el login muestra el motivo.
+- El layout protegido revisa la sesión cada 60 s y al volver a la pestaña (`GET /auth/sesion`, no cuenta como
+  actividad), para que el médico se entere antes de intentar guardar.
+- Sin conexión, `apiFetch` lanza `NETWORK_ERROR` con un mensaje entendible en lugar de "Load failed".
+
+**Borrador cifrado (`features/borrador/borrador.ts`).** Respalda en el navegador lo capturado que **todavía no llega
+al servidor**: un expediente nuevo sin guardar o los cambios sin guardar de uno ya creado (se fue el internet, se
+cerró la sesión, se cerró la ventana por error).
+- Una ranura por caso: `{cuenta}` para el expediente nuevo y `{cuenta}:{anio}-{folio}` para uno guardado. Solo se
+  guardan los campos que difieren de lo que hay en el servidor (o de la plantilla nueva); folio y fecha no cuentan.
+- Se cifra con AES-GCM (llave de 256 bits que entrega el backend al iniciar sesión, distinta por cuenta, no
+  exportable, solo en memoria; la ranura va como dato autenticado). En `localStorage` solo queda texto cifrado.
+- Se guarda 0.8 s después de cada cambio y, sin esperar, justo antes de enviar, al cerrarse la sesión, al ocultar o
+  cerrar la ventana (`visibilitychange`, `pagehide`) y al salir de la pantalla.
+- Se borra al guardarse en el servidor, al pulsar Descartar, al cerrar sesión a propósito y a las 24 h.
+- Al volver a entrar con la misma cuenta, el login lleva al expediente pendiente (primero el nuevo) y se ofrece
+  Recuperar (aplica solo los campos cambiados encima de la versión actual) o Descartar.
+- No sobrevive a una ventana privada de Safari ni pasa a otro navegador o equipo.
+- Sin HTTPS (`crypto.subtle` no existe) simplemente no hay borrador; nunca impide iniciar sesión.
 
 ## Plantillas PDF
 

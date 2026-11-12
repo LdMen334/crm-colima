@@ -8,6 +8,10 @@ import { InstitutionalHeader } from '@/components/layout/InstitutionalHeader';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SidebarProvider } from '@/components/layout/sidebar-state';
 import { refrescarMedicos } from '@/features/historia-clinica/config/medicos';
+import { revisarSesion } from '@/features/usuarios/api';
+
+/** Cada cuánto se confirma con el servidor que la sesión sigue vigente. */
+const REVISION_MS = 60_000;
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth();
@@ -24,6 +28,22 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   // una carrera entre este fetch y el del expediente).
   useEffect(() => {
     if (user) refrescarMedicos();
+  }, [user]);
+
+  // Revisión periódica de la sesión: si otro equipo entró con la cuenta o venció
+  // por inactividad, el médico se entera en menos de un minuto (o al volver a la
+  // pestaña), no hasta que intenta guardar. No cuenta como actividad en el backend.
+  useEffect(() => {
+    if (!user) return;
+    const revisar = () => {
+      if (document.visibilityState === 'visible') revisarSesion().catch(() => {});
+    };
+    const intervalo = setInterval(revisar, REVISION_MS);
+    document.addEventListener('visibilitychange', revisar);
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener('visibilitychange', revisar);
+    };
   }, [user]);
 
   if (!ready || !user) {

@@ -1,5 +1,6 @@
 import { apiFetch, setToken } from '@/lib/api-client';
 import { refrescarMedicos } from '@/features/historia-clinica/config/medicos';
+import { establecerLlave, olvidarLlave } from '@/features/borrador/borrador';
 import type { Role, SessionUser } from '@/features/auth/types';
 
 export interface UsuarioPublico {
@@ -91,13 +92,33 @@ const avisarCambio = () => {
 
 /** Inicia sesión: valida en el servidor y guarda el token Bearer de la sesión. */
 export async function authenticate(email: string, password: string, perfil?: Role): Promise<SessionUser> {
-  const { user, token } = await apiFetch<{ user: BackendUser; token: string }>('/auth/login', {
-    method: 'POST',
-    body: { email, password, perfil: perfil ? ROL_BACKEND[perfil] : undefined },
-  });
+  const { user, token, llave_borrador } = await apiFetch<{ user: BackendUser; token: string; llave_borrador: string }>(
+    '/auth/login',
+    {
+      method: 'POST',
+      body: { email, password, perfil: perfil ? ROL_BACKEND[perfil] : undefined },
+    },
+  );
   setToken(token);
+  await establecerLlave(llave_borrador);
   await refrescarMedicos();
   return aSesion(user);
+}
+
+/**
+ * Al recargar la página la sesión se restaura de `sessionStorage`, pero la llave
+ * del borrador solo vive en memoria: se vuelve a pedir y, de paso, se confirma
+ * con el servidor que el token sigue vigente (si no, `apiFetch` avisa y se va al login).
+ */
+export async function restaurarSesion(): Promise<SessionUser> {
+  const { user, llave_borrador } = await apiFetch<{ user: BackendUser; llave_borrador: string }>('/auth/me');
+  await establecerLlave(llave_borrador);
+  return aSesion(user);
+}
+
+/** Revisión periódica: confirma que la sesión sigue vigente sin contar como actividad. */
+export async function revisarSesion(): Promise<void> {
+  await apiFetch('/auth/sesion');
 }
 
 /** Cierra la sesión en el servidor (revoca el token) y limpia la local. */
@@ -106,6 +127,7 @@ export async function cerrarSesion(): Promise<void> {
     await apiFetch('/auth/logout', { method: 'POST' });
   } finally {
     setToken(null);
+    olvidarLlave();
   }
 }
 
