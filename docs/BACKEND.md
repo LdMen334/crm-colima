@@ -198,7 +198,7 @@ Expediente completo (`ExpedienteResource`):
 | Método y ruta | Rol | Cuerpo / query | Respuesta |
 |---|---|---|---|
 | `GET /bitacora` | admin | `accion`, `fecha` (día), `q`, `page` (20 por página) | `{ items: [{ fecha, usuario_nombre, accion, anio, folio, paciente, detalle }], total }` |
-| `GET /export/excel` | admin | `fecha?` (def. hoy) | `{ fecha, items: expediente[] }` — realizados **o editados** ese día |
+| `GET /export/excel` | admin | `fecha?` (def. hoy, AAAA-MM-DD), `creados?` (def. 1), `editados?` (def. 0) | `{ fecha, items: expediente[] }` — por defecto solo los **creados** ese día; `editados=1` agrega los editados ese día según la bitácora (no cuenta marcar la entrega). Cada folio una vez. 400 si ambos son 0 o la fecha no es AAAA-MM-DD |
 | `GET /admin/anios/pendientes` | admin | — | `{ anios: [{ anio, total, respaldo: { fecha, usuario_nombre, total, vigente } \| null }] }` años anteriores al actual con datos |
 | `GET /admin/anios/{anio}/respaldo` | admin | — | `{ anio, total, items: expediente[], huella }` (stream; **no borra**); bitácora "Respaldo de Año". 404 si el año no es anterior al actual o no tiene historial |
 | `POST /admin/anios/{anio}/respaldo` | admin | `{ total, huella }` de la descarga, **después de generar el Excel** | `{ anio, total, fecha }`; guarda el respaldo. 409 si el año cambió durante la descarga |
