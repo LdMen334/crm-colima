@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Eye, FilePlus2, Loader2, PencilLine, ScrollText, Search } from 'lucide-react';
+import { DatabaseBackup, Eye, FilePlus2, Loader2, PencilLine, ScrollText, Search } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
@@ -18,6 +18,7 @@ const ACCION_STYLE: Record<AccionAuditoria, { tone: BadgeTone; icon: typeof Eye 
   'Edición de Expediente': { tone: 'amber', icon: PencilLine },
   Consulta: { tone: 'blue', icon: Eye },
   'Importación Histórica': { tone: 'blue', icon: ScrollText },
+  'Cierre de Año': { tone: 'red', icon: DatabaseBackup },
 };
 
 export function BitacoraPanel() {
@@ -139,10 +140,17 @@ export function BitacoraPanel() {
                           </Badge>
                         </td>
                         <td className="max-w-64 px-4 py-3">
-                          <Link href={`/expediente/${clave(e.anio, e.folio)}`} className="font-mono text-xs font-semibold text-ink hover:text-crm-red hover:underline">
-                            Folio {e.folio}
-                          </Link>
-                          <span className="block truncate text-xs text-ink-muted">{e.paciente || 'Sin nombre'}</span>
+                          {e.accion === 'Cierre de Año' ? (
+                            // El cierre es de un año completo, no de un folio: no hay expediente que abrir.
+                            <span className="font-mono text-xs font-semibold text-ink">Año {e.anio}</span>
+                          ) : (
+                            <>
+                              <Link href={`/expediente/${clave(e.anio, e.folio)}`} className="font-mono text-xs font-semibold text-ink hover:text-crm-red hover:underline">
+                                Folio {e.folio}
+                              </Link>
+                              <span className="block truncate text-xs text-ink-muted">{e.paciente || 'Sin nombre'}</span>
+                            </>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-xs leading-relaxed text-ink-muted">{e.detalle}</td>
                       </tr>

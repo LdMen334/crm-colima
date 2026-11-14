@@ -15,7 +15,9 @@ primero, se avisa del folio reasignado. La fecha de realización la fija el serv
 de solo lectura. Un expediente se identifica con la clave `{anio}-{folio}` (ver `docs/BACKEND.md` §3).
 
 **Cierre de año.** Cada año el historial anterior se respalda en Excel y **se borra** de la base
-(`/admin/anios/{anio}/cerrar`, irreversible). El admin ve un aviso mientras haya años pendientes.
+(irreversible). El admin ve un aviso mientras haya años pendientes. Son dos pasos que el admin ve como uno: se
+descarga el respaldo, se genera el Excel y solo entonces se pide el borrado; si algo falla antes, no se borra nada.
+Solo se cierran años anteriores al actual, y la descarga y el borrado quedan en la bitácora («Cierre de Año»).
 
 **Confirmación de datos del paciente (2026-11-14).** Al guardar un expediente nuevo, o al cambiar nombre, CURP,
 NSS, fecha de nacimiento o género de uno ya guardado, aparece una ventana con esos datos, la empresa y el médico

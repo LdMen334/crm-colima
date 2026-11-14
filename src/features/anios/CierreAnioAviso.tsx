@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, DatabaseBackup, Loader2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { btnPrimary, btnSecondary } from '@/components/ui/styles';
-import { cerrarAnio } from '@/features/historia-clinica/api';
+import { cerrarAnio, descargarRespaldoAnio } from '@/features/historia-clinica/api';
 import { obtenerAniosPendientes } from './api';
 
 type Paso = 'oculto' | 'aviso' | 'confirmar' | 'cerrando' | 'listo';
@@ -36,15 +36,21 @@ export function CierreAnioAviso() {
     if (!anio) return;
     setPaso('cerrando');
     setError(null);
+    let excelDescargado = false;
     try {
-      const { totalBorrado: total, items } = await cerrarAnio(anio);
+      // Primero el respaldo y el Excel; el borrado solo se pide si ambos salieron
+      // bien (auditoría run-1: antes se borraba aunque el Excel no se generara).
+      const respaldo = await descargarRespaldoAnio(anio);
       const { descargarExcel } = await import('@/features/reportes-excel/export');
-      await descargarExcel(items, `historias-clinicas_${anio}.xlsx`, `Historias clínicas · Respaldo ${anio}`);
+      await descargarExcel(respaldo.items, `historias-clinicas_${anio}.xlsx`, `Historias clínicas · Respaldo ${anio}`);
+      excelDescargado = true;
+      const { totalBorrado: total } = await cerrarAnio(anio, respaldo.total, respaldo.huella);
       setTotalBorrado(total);
       setPendientes((lista) => (lista ?? []).slice(1));
       setPaso('listo');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No fue posible cerrar el año. Intenta de nuevo.');
+      const motivo = err instanceof Error ? err.message : 'No fue posible cerrar el año. Intenta de nuevo.';
+      setError(excelDescargado ? `Se descargó el Excel, pero el historial no se borró: ${motivo}` : motivo);
       setPaso('confirmar');
     }
   }

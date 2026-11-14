@@ -200,14 +200,16 @@ Expediente completo (`ExpedienteResource`):
 | `GET /bitacora` | admin | `accion`, `fecha` (día), `q`, `page` (20 por página) | `{ items: [{ fecha, usuario_nombre, accion, anio, folio, paciente, detalle }], total }` |
 | `GET /export/excel` | admin | `fecha?` (def. hoy) | `{ fecha, items: expediente[] }` — realizados **o editados** ese día |
 | `GET /admin/anios/pendientes` | admin | — | `{ anios: number[] }` años anteriores al actual con datos |
-| `POST /admin/anios/{anio}/cerrar` | admin | `{ confirmar: true }` | `{ anio, total_borrado, items: expediente[] }` (stream) |
+| `GET /admin/anios/{anio}/respaldo` | admin | — | `{ anio, total, items: expediente[], huella }` (stream; **no borra**). 404 si el año no es anterior al actual o no tiene historial; bitácora "Cierre de Año" (descarga) |
+| `POST /admin/anios/{anio}/cerrar` | admin | `{ total, huella }` de la descarga | `{ anio, total_borrado, pacientes_borrados }`; bitácora "Cierre de Año" (borrado). 409 si el año cambió desde la descarga (no borra), 404 como arriba, 400 sin total/huella |
 
-`accion` de bitácora: `Creación de Folio`, `Edición de Expediente`, `Consulta`, `Importación Histórica`.
+`accion` de bitácora: `Creación de Folio`, `Edición de Expediente`, `Consulta`, `Importación Histórica`, `Cierre de Año` (este último con `folio: 0` y sin paciente: es de un año, no de un expediente).
 
-> ⚠️ **Cierre de año = borrado irreversible.** El servidor transmite el respaldo completo y, si la descarga llegó
-> entera, **borra** todas las historias de ese año y los pacientes que se queden sin visitas. El front debe
-> construir el Excel de respaldo con esa misma respuesta (`cerrarAnio()` + `features/anios/CierreAnioAviso.tsx`).
-> No hay forma de recuperar los datos después.
+> ⚠️ **Cierre de año = borrado irreversible, en dos pasos** (auditoría run-1, 2026-11-14). 1) `respaldo` transmite el
+> historial completo y al final la `huella`; 2) solo **después de generar el Excel** el front llama `cerrar` con el
+> `total` y la `huella` recibidos, y el servidor borra las historias del año y los pacientes que se queden sin visitas
+> (en una transacción, comparando antes la huella). Front: `descargarRespaldoAnio()` + `cerrarAnio()` en
+> `features/anios/CierreAnioAviso.tsx`. No hay forma de recuperar los datos después.
 
 ## 5. Payload del expediente (`POST` / `PUT`)
 
@@ -285,4 +287,4 @@ Correspondencia completa de columnas con etiquetas oficiales: `app/Support/Campo
 | Excel de la jornada | `features/reportes-excel/*` | `ExportController` |
 | Reporte SABI | `features/reportes-sabi/*` | `GET /expedientes` + `/expedientes/empresas` |
 | PDF PECO / TX | `features/reportes-pdf/*` | `POST /expedientes/{clave}/entrega` |
-| Cierre de año | `features/anios/*`, `cerrarAnio()` | `CierreAnioController` |
+| Cierre de año | `features/anios/*`, `descargarRespaldoAnio()`, `cerrarAnio()` | `CierreAnioController` |
