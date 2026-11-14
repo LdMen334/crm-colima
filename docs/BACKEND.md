@@ -60,7 +60,7 @@ listos para mostrarse.
 | 400 | `VALIDATION_ERROR` | Validación; `fields` trae el mensaje por campo (snake_case) |
 | 401 | `SESSION_REPLACED` | La cuenta inició sesión en otro equipo o pestaña |
 | 401 | `SESSION_EXPIRED` | La sesión venció (1 h sin actividad o tope de 8 h) |
-| 401 | `UNAUTHENTICATED` | Sin token o token inexistente |
+| 401 | `UNAUTHENTICATED` | Sin token, token inexistente o con formato inválido (antes este último daba 500) |
 | 401 | `INVALID_CREDENTIALS` | Correo o contraseña incorrectos en el login |
 | 403 | `FORBIDDEN` | Rol sin permiso, cuenta inactiva, perfil equivocado en el login |
 | 403 | `PASSWORD_CHANGE_REQUIRED` | La cuenta tiene contraseña temporal y llamó un endpoint distinto de `/auth/*` o `/me*` |
@@ -198,16 +198,19 @@ Expediente completo (`ExpedienteResource`):
 | Método y ruta | Rol | Cuerpo / query | Respuesta |
 |---|---|---|---|
 | `GET /bitacora` | admin | `accion`, `fecha` (día), `q`, `page` (20 por página) | `{ items: [{ fecha, usuario_nombre, accion, anio, folio, paciente, detalle }], total }` |
-| `GET /export/excel` | admin | `fecha?` (def. hoy) | `{ fecha, items: expediente[] }` — realizados **o editados** ese día |
-| `GET /admin/anios/pendientes` | admin | — | `{ anios: number[] }` años anteriores al actual con datos |
-| `POST /admin/anios/{anio}/cerrar` | admin | `{ confirmar: true }` | `{ anio, total_borrado, items: expediente[] }` (stream) |
+| `GET /export/excel` | admin | `fecha?` (def. hoy, AAAA-MM-DD), `creados?` (def. 1), `editados?` (def. 0) | `{ fecha, items: expediente[] }` — por defecto solo los **creados** ese día; `editados=1` agrega los editados ese día según la bitácora (no cuenta marcar la entrega). Cada folio una vez. 400 si ambos son 0 o la fecha no es AAAA-MM-DD |
+| `GET /admin/anios/pendientes` | admin | — | `{ anios: [{ anio, total, respaldo: { fecha, usuario_nombre, total, vigente } \| null }] }` años anteriores al actual con datos |
+| `GET /admin/anios/{anio}/respaldo` | admin | — | `{ anio, total, items: expediente[], huella }` (stream; **no borra**); bitácora "Respaldo de Año". 404 si el año no es anterior al actual o no tiene historial |
+| `POST /admin/anios/{anio}/respaldo` | admin | `{ total, huella }` de la descarga, **después de generar el Excel** | `{ anio, total, fecha }`; guarda el respaldo. 409 si el año cambió durante la descarga |
+| `POST /admin/anios/{anio}/cerrar` | admin | `{ confirmacion: "CERRAR 2025" }` | `{ anio, total_borrado, pacientes_borrados }`; bitácora "Cierre de Año". 409 sin respaldo o si el año cambió después del último respaldo; 400 si la confirmación no coincide |
 
-`accion` de bitácora: `Creación de Folio`, `Edición de Expediente`, `Consulta`, `Importación Histórica`.
+`accion` de bitácora: `Creación de Folio`, `Edición de Expediente`, `Consulta`, `Importación Histórica`, `Respaldo de Año`, `Cierre de Año` (estos dos con `folio: 0` y sin paciente: son de un año, no de un expediente).
 
-> ⚠️ **Cierre de año = borrado irreversible.** El servidor transmite el respaldo completo y, si la descarga llegó
-> entera, **borra** todas las historias de ese año y los pacientes que se queden sin visitas. El front debe
-> construir el Excel de respaldo con esa misma respuesta (`cerrarAnio()` + `features/anios/CierreAnioAviso.tsx`).
-> No hay forma de recuperar los datos después.
+> ⚠️ **Cierre de año = borrado irreversible; respaldar y borrar son acciones separadas** (2026-11-14). Pantalla
+> `/admin/cierre-anio` (`features/anios/CierreAnioPanel.tsx`): descargar el respaldo (`descargarRespaldoAnio()`, generar
+> el Excel y `confirmarRespaldoAnio()`) se puede hacer cuando se quiera; borrar (`cerrarAnio()`) solo se habilita con un
+> respaldo vigente y escribiendo `CERRAR {año}`. Si alguien edita un expediente del año después del respaldo, hay que
+> respaldar otra vez. No hay forma de recuperar los datos después.
 
 ## 5. Payload del expediente (`POST` / `PUT`)
 
@@ -285,4 +288,4 @@ Correspondencia completa de columnas con etiquetas oficiales: `app/Support/Campo
 | Excel de la jornada | `features/reportes-excel/*` | `ExportController` |
 | Reporte SABI | `features/reportes-sabi/*` | `GET /expedientes` + `/expedientes/empresas` |
 | PDF PECO / TX | `features/reportes-pdf/*` | `POST /expedientes/{clave}/entrega` |
-| Cierre de año | `features/anios/*`, `cerrarAnio()` | `CierreAnioController` |
+| Cierre de año | `features/anios/*`, `descargarRespaldoAnio()` | `CierreAnioController`, `RespaldoAnio` |

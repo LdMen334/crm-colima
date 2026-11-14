@@ -14,8 +14,16 @@ guardar, de forma atómica; el que se muestra antes de guardar es solo una vista
 primero, se avisa del folio reasignado. La fecha de realización la fija el servidor (hoy, zona México). Ambos son
 de solo lectura. Un expediente se identifica con la clave `{anio}-{folio}` (ver `docs/BACKEND.md` §3).
 
+**Reporte Excel de la jornada.** Por defecto trae solo los folios **creados** ese día (petición del cliente
+2026-11-14); con la casilla «Editados» agrega los editados ese día (según la bitácora). El Excel siempre trae el
+expediente como está hoy: no hay versiones, así que un folio del día 9 editado el 11 sale con los cambios del 11.
+
 **Cierre de año.** Cada año el historial anterior se respalda en Excel y **se borra** de la base
-(`/admin/anios/{anio}/cerrar`, irreversible). El admin ve un aviso mientras haya años pendientes.
+(irreversible) desde la pantalla **Cierre de año** del menú de Administración. Esa opción **solo aparece cuando hay
+historial de años anteriores al actual** (en 2026 se cierra 2025; 2026 hasta 2027), y el panel muestra una franja que
+lleva ahí. Respaldar y borrar son acciones separadas: el Excel se descarga cuando se quiera, y
+borrar solo se habilita si el último respaldo sigue al día (nadie editó el año después) y escribiendo `CERRAR {año}`.
+Solo se cierran años anteriores al actual; la bitácora registra «Respaldo de Año» y «Cierre de Año».
 
 **Confirmación de datos del paciente (2026-11-14).** Al guardar un expediente nuevo, o al cambiar nombre, CURP,
 NSS, fecha de nacimiento o género de uno ya guardado, aparece una ventana con esos datos, la empresa y el médico

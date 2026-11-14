@@ -206,32 +206,40 @@ export async function abrirExpediente(claveExpediente: string, _user: SessionUse
 }
 
 /**
- * Expedientes de una jornada (los realizados ese día, o editados ese día
- * aunque se hayan realizado antes), para construir el Excel diario.
- * Solo lo puede pedir un administrador.
+ * Expedientes de una jornada para construir el Excel diario: los creados ese
+ * día, los editados ese día (según la bitácora) o ambos. El cliente pidió que
+ * por defecto solo salgan los creados. Solo lo puede pedir un administrador.
+ *
+ * @param fecha día de la jornada (AAAA-MM-DD)
+ * @param movimientos qué folios incluir; al menos uno debe ser true
  */
-export async function obtenerJornada(fecha: string): Promise<Expediente[]> {
+export async function obtenerJornada(
+  fecha: string,
+  movimientos: { creados: boolean; editados: boolean } = { creados: true, editados: false },
+): Promise<Expediente[]> {
   const { items } = await apiFetch<{ fecha: string; items: BackendExpediente[] }>('/export/excel', {
-    query: { fecha },
+    query: { fecha, creados: movimientos.creados ? '1' : '0', editados: movimientos.editados ? '1' : '0' },
   });
   return items.map(aExpediente);
 }
 
 /**
- * Respalda y borra para siempre todas las historias clínicas de un año (el
- * cliente cierra el historial completo cada año por costo de almacenamiento).
- * Solo lo puede pedir un administrador; no se puede deshacer.
+ * Descarga el historial completo de un año para armar el Excel de respaldo. No
+ * borra nada; después hay que confirmar el respaldo con confirmarRespaldoAnio()
+ * (features/anios/api.ts). Solo para administradores.
  *
- * @param anio año a cerrar
- * @return los expedientes borrados (para armar el Excel de respaldo) y el total
+ * @param anio año a respaldar
+ * @return los expedientes, su total y la huella que pide la confirmación
  */
-export async function cerrarAnio(anio: number): Promise<{ totalBorrado: number; items: Expediente[] }> {
-  const data = await apiFetch<{ anio: number; total_borrado: number; items: BackendExpediente[] }>(
-    `/admin/anios/${anio}/cerrar`,
-    { method: 'POST', body: { confirmar: true } },
+export async function descargarRespaldoAnio(
+  anio: number,
+): Promise<{ total: number; huella: string; items: Expediente[] }> {
+  const data = await apiFetch<{ anio: number; total: number; huella: string; items: BackendExpediente[] }>(
+    `/admin/anios/${anio}/respaldo`,
   );
-  return { totalBorrado: data.total_borrado, items: data.items.map(aExpediente) };
+  return { total: data.total, huella: data.huella, items: data.items.map(aExpediente) };
 }
+
 
 /**
  * Estampa la fecha de entrega de resultados (hoy, zona México) justo antes

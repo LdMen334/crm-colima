@@ -9,6 +9,7 @@ import { Pulse } from '@/components/brand/Pulse';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { can } from '@/features/auth/permissions';
 import { ROLE_LABEL } from '@/features/auth/types';
+import { useHayAniosPendientes } from '@/features/anios/useHayAniosPendientes';
 import { isActive, NAV_GROUPS } from './nav';
 import { useSidebar } from './sidebar-state';
 
@@ -87,6 +88,7 @@ function SidebarContent({ compact, onToggle, onClose }: { compact: boolean; onTo
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const hayAniosPendientes = useHayAniosPendientes(!!user && can(user.role, 'admin:cierre-anio'));
   if (!user) return null;
 
   const iconBtn =
@@ -149,7 +151,9 @@ function SidebarContent({ compact, onToggle, onClose }: { compact: boolean; onTo
 
       <nav className={`no-scrollbar flex-1 space-y-6 overflow-y-auto pb-4 ${compact ? 'px-3' : 'px-3'}`} aria-label="Principal">
         {NAV_GROUPS.map((group) => {
-          const items = group.items.filter((i) => can(user.role, i.permission));
+          const items = group.items.filter(
+            (i) => can(user.role, i.permission) && (!i.soloConAniosPendientes || hayAniosPendientes),
+          );
           if (!items.length) return null;
           return (
             <div key={group.title}>

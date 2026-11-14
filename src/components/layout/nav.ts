@@ -1,4 +1,4 @@
-import { ClipboardPlus, Eye, FileSpreadsheet, FolderSearch, ScrollText, UserRoundCog, UsersRound, type LucideIcon } from 'lucide-react';
+import { Archive, ClipboardPlus, Eye, FileSpreadsheet, FolderSearch, ScrollText, UserRoundCog, UsersRound, type LucideIcon } from 'lucide-react';
 import type { Permission } from '@/features/auth/permissions';
 
 export interface NavItem {
@@ -6,6 +6,8 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   permission: Permission;
+  /** Solo se muestra si hay historial de años anteriores al actual (cierre de año). */
+  soloConAniosPendientes?: boolean;
 }
 
 export const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[] = [
@@ -23,6 +25,7 @@ export const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[]
       { href: '/admin/usuarios', label: 'Usuarios', icon: UsersRound, permission: 'admin:usuarios' },
       { href: '/admin/bitacora', label: 'Bitácora de auditoría', icon: ScrollText, permission: 'admin:bitacora' },
       { href: '/admin/reportes', label: 'Reporte Excel', icon: FileSpreadsheet, permission: 'admin:reportes' },
+      { href: '/admin/cierre-anio', label: 'Cierre de año', icon: Archive, permission: 'admin:cierre-anio', soloConAniosPendientes: true },
     ],
   },
   {

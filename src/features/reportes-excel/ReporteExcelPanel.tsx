@@ -15,18 +15,21 @@ export function ReporteExcelPanel() {
   const [dia, setDia] = useState(todayIso);
   const [exportando, setExportando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Por defecto solo los creados (petición del cliente 2026-11-14); los editados se agregan a elección.
+  const [creados, setCreados] = useState(true);
+  const [editados, setEditados] = useState(false);
 
-  // El servidor ya filtra por jornada (realizados o editados ese día); se vuelve a pedir cuando cambia el día.
+  // El servidor filtra la jornada; se vuelve a pedir cuando cambia el día o la selección.
   useEffect(() => {
     setData(null);
     setError(null);
-    obtenerJornada(dia)
+    obtenerJornada(dia, { creados, editados })
       .then(setData)
       .catch((err: unknown) => {
         setData([]);
         setError(err instanceof Error ? err.message : 'No fue posible cargar los expedientes de la jornada.');
       });
-  }, [dia]);
+  }, [dia, creados, editados]);
 
   const delDia = useMemo(() => [...(data ?? [])].sort((a, b) => Number(a.folio) - Number(b.folio)), [data]);
   const ultimo = delDia.reduce<string | null>((m, e) => (!m || e.actualizadoEn > m ? e.actualizadoEn : m), null);
@@ -67,26 +70,58 @@ export function ReporteExcelPanel() {
               className={`${inputPill} w-52 tabular-nums`}
             />
           </label>
+          <fieldset className="block">
+            <legend className="mb-1.5 text-xs font-medium text-ink-muted">Incluir</legend>
+            <div className="flex h-11 items-center gap-4">
+              {/* No se puede desmarcar la última opción: sin ninguna no hay reporte. */}
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-crm-red"
+                  checked={creados}
+                  disabled={creados && !editados}
+                  onChange={(e) => setCreados(e.target.checked)}
+                />
+                <span>Creados</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-crm-red"
+                  checked={editados}
+                  disabled={editados && !creados}
+                  onChange={(e) => setEditados(e.target.checked)}
+                />
+                <span>Editados</span>
+              </label>
+            </div>
+          </fieldset>
           {!esHoy && (
             <button type="button" onClick={() => setDia(todayIso())} className="h-10 rounded-lg px-3 text-sm font-medium text-ink-muted transition-colors hover:bg-slate-100 hover:text-ink">
               Volver a hoy
             </button>
           )}
-          <p className="pb-2.5 text-xs text-ink-muted">
-            <span className="font-semibold tabular-nums text-ink">{data ? delDia.length : '—'}</span>{' '}
-            {delDia.length === 1 ? 'expediente' : 'expedientes'}
-            {ultimo &&
-              ` · último movimiento ${new Date(ultimo).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`}
-          </p>
-          <button
-            type="button"
-            onClick={exportar}
-            disabled={!data || exportando || delDia.length === 0}
-            className={`${btnPrimary} ml-auto h-11 px-5`}
-          >
-            {exportando ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-            Descargar Reporte Excel (.xlsx)
-          </button>
+          {/* Contador y botón juntos a la derecha: si no caben en la misma línea que los filtros, bajan juntos.
+              El contador mide lo mismo que los controles (h-11) para quedar centrado con ellos. */}
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-4">
+            <p className="flex h-11 items-center gap-1 text-xs text-ink-muted">
+              <span className="font-semibold tabular-nums text-ink">{data ? delDia.length : '—'}</span>
+              <span>
+                {delDia.length === 1 ? 'expediente' : 'expedientes'}
+                {ultimo &&
+                  ` · último movimiento ${new Date(ultimo).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={exportar}
+              disabled={!data || exportando || delDia.length === 0}
+              className={`${btnPrimary} h-11 px-5`}
+            >
+              {exportando ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              Descargar Reporte Excel (.xlsx)
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -101,7 +136,8 @@ export function ReporteExcelPanel() {
           </div>
         ) : delDia.length === 0 ? (
           <p className="px-5 py-14 text-center text-sm text-ink-muted">
-            No hay expedientes realizados ni editados el {formatFechaMx(dia, '/')}.
+            No hay expedientes {creados && editados ? 'creados ni editados' : creados ? 'creados' : 'editados'} el{' '}
+            {formatFechaMx(dia, '/')}.
           </p>
         ) : (
           <div className="overflow-x-auto">
