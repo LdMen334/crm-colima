@@ -218,20 +218,22 @@ export async function obtenerJornada(fecha: string): Promise<Expediente[]> {
 }
 
 /**
- * Respalda y borra para siempre todas las historias clínicas de un año (el
- * cliente cierra el historial completo cada año por costo de almacenamiento).
- * Solo lo puede pedir un administrador; no se puede deshacer.
+ * Descarga el historial completo de un año para armar el Excel de respaldo. No
+ * borra nada; después hay que confirmar el respaldo con confirmarRespaldoAnio()
+ * (features/anios/api.ts). Solo para administradores.
  *
- * @param anio año a cerrar
- * @return los expedientes borrados (para armar el Excel de respaldo) y el total
+ * @param anio año a respaldar
+ * @return los expedientes, su total y la huella que pide la confirmación
  */
-export async function cerrarAnio(anio: number): Promise<{ totalBorrado: number; items: Expediente[] }> {
-  const data = await apiFetch<{ anio: number; total_borrado: number; items: BackendExpediente[] }>(
-    `/admin/anios/${anio}/cerrar`,
-    { method: 'POST', body: { confirmar: true } },
+export async function descargarRespaldoAnio(
+  anio: number,
+): Promise<{ total: number; huella: string; items: Expediente[] }> {
+  const data = await apiFetch<{ anio: number; total: number; huella: string; items: BackendExpediente[] }>(
+    `/admin/anios/${anio}/respaldo`,
   );
-  return { totalBorrado: data.total_borrado, items: data.items.map(aExpediente) };
+  return { total: data.total, huella: data.huella, items: data.items.map(aExpediente) };
 }
+
 
 /**
  * Estampa la fecha de entrega de resultados (hoy, zona México) justo antes

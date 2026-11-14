@@ -10,6 +10,7 @@ export type Permission =
   | 'admin:usuarios'
   | 'admin:bitacora'
   | 'admin:reportes'
+  | 'admin:cierre-anio'
   | 'perfil:editar'
   | 'reportes-sabi:pdf-download';
 
@@ -41,6 +42,7 @@ const MATRIX: Record<Role, readonly Permission[]> = {
     'admin:usuarios',
     'admin:bitacora',
     'admin:reportes',
+    'admin:cierre-anio',
     'perfil:editar',
     'reportes-sabi:pdf-download',
   ],

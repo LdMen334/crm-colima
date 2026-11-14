@@ -1,9 +1,15 @@
 import { apiFetch } from '@/lib/api-client';
 
-export type AccionAuditoria = 'Creación de Folio' | 'Edición de Expediente' | 'Consulta' | 'Importación Histórica';
+export type AccionAuditoria =
+  | 'Creación de Folio'
+  | 'Edición de Expediente'
+  | 'Consulta'
+  | 'Importación Histórica'
+  | 'Respaldo de Año'
+  | 'Cierre de Año';
 
 export const ACCIONES: readonly AccionAuditoria[] = [
-  'Creación de Folio', 'Edición de Expediente', 'Consulta', 'Importación Histórica',
+  'Creación de Folio', 'Edición de Expediente', 'Consulta', 'Importación Histórica', 'Respaldo de Año', 'Cierre de Año',
 ];
 
 export interface EventoAuditoria {
