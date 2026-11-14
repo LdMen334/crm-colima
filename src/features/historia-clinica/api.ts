@@ -206,13 +206,19 @@ export async function abrirExpediente(claveExpediente: string, _user: SessionUse
 }
 
 /**
- * Expedientes de una jornada (los realizados ese día, o editados ese día
- * aunque se hayan realizado antes), para construir el Excel diario.
- * Solo lo puede pedir un administrador.
+ * Expedientes de una jornada para construir el Excel diario: los creados ese
+ * día, los editados ese día (según la bitácora) o ambos. El cliente pidió que
+ * por defecto solo salgan los creados. Solo lo puede pedir un administrador.
+ *
+ * @param fecha día de la jornada (AAAA-MM-DD)
+ * @param movimientos qué folios incluir; al menos uno debe ser true
  */
-export async function obtenerJornada(fecha: string): Promise<Expediente[]> {
+export async function obtenerJornada(
+  fecha: string,
+  movimientos: { creados: boolean; editados: boolean } = { creados: true, editados: false },
+): Promise<Expediente[]> {
   const { items } = await apiFetch<{ fecha: string; items: BackendExpediente[] }>('/export/excel', {
-    query: { fecha },
+    query: { fecha, creados: movimientos.creados ? '1' : '0', editados: movimientos.editados ? '1' : '0' },
   });
   return items.map(aExpediente);
 }
