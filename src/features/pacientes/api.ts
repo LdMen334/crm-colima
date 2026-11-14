@@ -1,6 +1,7 @@
 import { apiFetch, ApiError } from '@/lib/api-client';
 import { toCamel } from '@/features/historia-clinica/lib/db-mapping';
 import { ALL_FIELDS, type FieldKey, type HistoriaClinicaValues } from '@/features/historia-clinica/config/fields';
+import type { IdentidadServidor, PacienteRegistrado } from '@/features/historia-clinica/lib/confirmacion';
 
 /** Datos fijos del paciente que se precargan en una nueva visita. */
 export const CAMPOS_FIJOS = [
@@ -105,4 +106,51 @@ export async function searchPacientes(query: string): Promise<PacienteBusqueda[]
     items: { id: string; nombre_completo: string; curp: string | null; nss: string | null }[];
   }>('/pacientes/buscar', { query: { q: query } });
   return items.map((i) => ({ id: i.id, nombreCompleto: i.nombre_completo, curp: i.curp ?? '', nss: i.nss ?? '' }));
+}
+
+interface PacienteIdentidadApi {
+  id: string;
+  nombre_completo: string | null;
+  curp: string | null;
+  nss: string | null;
+  expedientes: number;
+  es_este: boolean;
+}
+
+interface IdentidadRespuesta {
+  por_curp: PacienteIdentidadApi | null;
+  por_nss: PacienteIdentidadApi | null;
+  expedientes_del_paciente: number | null;
+}
+
+const aPacienteRegistrado = (p: PacienteIdentidadApi | null): PacienteRegistrado | null =>
+  p && {
+    id: p.id,
+    nombreCompleto: p.nombre_completo ?? '',
+    curp: p.curp ?? '',
+    nss: p.nss ?? '',
+    expedientes: p.expedientes,
+    esEste: p.es_este,
+  };
+
+/**
+ * A quién pertenecen la CURP y el NSS capturados, para la ventana de confirmación
+ * antes de guardar. Solo identidad y número de expedientes (sin datos clínicos).
+ *
+ * @param claveExpediente "{año}-{folio}" del expediente que se edita; vacío en uno nuevo
+ */
+export async function verificarIdentidad(
+  { curp, nss }: { curp?: string; nss?: string },
+  claveExpediente?: string | null,
+): Promise<IdentidadServidor> {
+  const c = claveCurp(curp);
+  const n = claveNss(nss);
+  const r = await apiFetch<IdentidadRespuesta>('/pacientes/identidad', {
+    query: { curp: c || undefined, nss: n || undefined, clave: claveExpediente ?? undefined },
+  });
+  return {
+    porCurp: aPacienteRegistrado(r.por_curp),
+    porNss: aPacienteRegistrado(r.por_nss),
+    expedientesDelPaciente: r.expedientes_del_paciente,
+  };
 }

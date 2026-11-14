@@ -151,6 +151,7 @@ mismo, y siempre queda ≥ 1 admin activo (409). Correo duplicado → 409 con `f
 |---|---|---|---|
 | `GET /pacientes/buscar` | todos | `q` (≥ 2 caracteres) | `{ items: [{ id, nombre_completo, curp, nss }] }` máx. 8; CURP/NSS por prefijo, nombre sin acentos |
 | `GET /pacientes/lookup` | todos | `curp` y/o `nss`, `excluir_clave?` | `{ paciente_id, ultimo_folio, ultimo_anio, datos }` o 404 |
+| `GET /pacientes/identidad` | todos | `curp?`, `nss?`, `clave?` (`{anio}-{folio}` del expediente que se edita) | `{ por_curp, por_nss, expedientes_del_paciente }`; cada `por_*` es `{ id, nombre_completo, curp, nss, expedientes, es_este }` o `null`. Solo identidad (sin datos clínicos), para la ventana de confirmación |
 
 `lookup` precarga un paciente recurrente desde su visita más reciente: datos fijos (nombre, nacimiento, género,
 CURP, NSS, domicilio, teléfono, empresa, puesto), **Antecedentes, Historia laboral, Exploración física y

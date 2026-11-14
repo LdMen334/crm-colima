@@ -39,6 +39,15 @@ export const esquemaExpediente = z
     if (!d.curp && !d.nss) {
       ctx.addIssue({ code: 'custom', path: ['curp'], message: 'Captura la CURP o el NSS del paciente.' });
     }
+    // 00000000000 se usaba como "sin NSS" y juntaba a varias personas en un mismo
+    // paciente; el backend lo rechaza igual (PacienteUpsertService).
+    if (/^(\d)\1{10}$/.test(d.nss.replace(/\D/g, ''))) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['nss'],
+        message: 'El NSS no puede tener todos los dígitos iguales. Si no lo tienes, déjalo vacío.',
+      });
+    }
   });
 
 /** Resolver de React Hook Form: valida con Zod y deja el resto de los 200+ campos libres. */
