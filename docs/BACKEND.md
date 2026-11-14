@@ -60,7 +60,7 @@ listos para mostrarse.
 | 400 | `VALIDATION_ERROR` | Validación; `fields` trae el mensaje por campo (snake_case) |
 | 401 | `SESSION_REPLACED` | La cuenta inició sesión en otro equipo o pestaña |
 | 401 | `SESSION_EXPIRED` | La sesión venció (1 h sin actividad o tope de 8 h) |
-| 401 | `UNAUTHENTICATED` | Sin token o token inexistente |
+| 401 | `UNAUTHENTICATED` | Sin token, token inexistente o con formato inválido (antes este último daba 500) |
 | 401 | `INVALID_CREDENTIALS` | Correo o contraseña incorrectos en el login |
 | 403 | `FORBIDDEN` | Rol sin permiso, cuenta inactiva, perfil equivocado en el login |
 | 403 | `PASSWORD_CHANGE_REQUIRED` | La cuenta tiene contraseña temporal y llamó un endpoint distinto de `/auth/*` o `/me*` |
