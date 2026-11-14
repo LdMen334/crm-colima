@@ -66,7 +66,7 @@ listos para mostrarse.
 | 403 | `PASSWORD_CHANGE_REQUIRED` | La cuenta tiene contraseña temporal y llamó un endpoint distinto de `/auth/*` o `/me*` |
 | 404 | `NOT_FOUND` | Recurso o clave de expediente inexistente |
 | 409 | `CONFLICT` | Correo duplicado, último admin activo, o choque de guardado simultáneo ("Otro equipo guardó al mismo tiempo…") |
-| 429 | `TOO_MANY_REQUESTS` | Login: más de 5 intentos/min por IP **y** por cuenta |
+| 429 | `TOO_MANY_REQUESTS` | Login: más de 5 intentos/min por cuenta (desde cualquier IP) o más de 20/min por IP (cualquier cuenta). Cambio de contraseña: más de 5 intentos/min por usuario |
 | 500 | `INTERNAL_ERROR` | Nunca expone detalles internos |
 
 ### Middlewares (orden de aplicación)
