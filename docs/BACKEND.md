@@ -166,9 +166,9 @@ Diagnóstico**. A propósito **no** incluye Laboratorio, Audiometría ni Gabinet
 | `GET /expedientes/estadisticas` | todos | `anio?` | `{ anio, total, ultimos_7_dias, hoy, editados_hoy, por_tipo }` |
 | `GET /expedientes/empresas` | todos | — | `{ items: string[] }` (filtro del Reporte SABI) |
 | `GET /expedientes/zonas` | todos | — | `{ items: string[] }` (zonas de fábrica + las ya capturadas) |
-| `POST /expedientes` | todos | payload plano (ver §5) | 201 expediente; bitácora "Creación de Folio" |
+| `POST /expedientes` | todos | payload plano (ver §5) | 201 expediente; bitácora "Creación de Folio" (si corrige datos fijos de un paciente existente, el detalle agrega «antes» → «después»). 400 si la CURP y el NSS son de pacientes distintos o ya están guardados con otra clave |
 | `GET /expedientes/{clave}` | todos | — | expediente; bitácora "Consulta" |
-| `PUT /expedientes/{clave}` | todos | payload plano | expediente; bitácora "Edición de Expediente" con los campos que cambiaron |
+| `PUT /expedientes/{clave}` | todos | payload plano | expediente; bitácora "Edición de Expediente" con los campos que cambiaron. CURP/NSS se normalizan como en el alta; 400 si ya pertenecen a otro paciente |
 | `GET /expedientes/{clave}/pdf` | admin | `plantilla=PECO\|TX` | expediente + `plantilla`; bitácora "Consulta" (hoy el front no lo usa: genera el PDF con el expediente ya abierto) |
 | `POST /expedientes/{clave}/entrega` | admin | — | `{ fecha_entrega_resultados }` (hoy, zona México). Se llama justo antes de generar el PDF |
 
