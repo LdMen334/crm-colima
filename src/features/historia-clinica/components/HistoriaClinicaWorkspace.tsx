@@ -11,13 +11,16 @@ import { Badge } from '@/components/ui/Badge';
 import { FIELD_BY_KEY, type FieldKey, type HistoriaClinicaValues } from '../config/fields';
 import { SECTIONS, type TabId } from '../config/sections';
 import { CAMPOS_ADVERTENCIA, resolverExpediente } from '../lib/validacion';
+import { cambioDeIdentidad, evaluarIdentidad, type Aviso } from '../lib/confirmacion';
 import { useAutoCalculos } from '../hooks/useAutoCalculos';
 import { abrirExpediente, clave, guardarExpediente, siguienteFolio, valoresNuevoExpediente } from '../api';
 import { formatFechaMx } from '../lib/format';
 import { HistoriaClinicaForm } from './HistoriaClinicaForm';
+import { ConfirmarDatosModal } from './ConfirmarDatosModal';
 import { ClinicalSummaryPanel } from './ClinicalSummaryPanel';
 import { PatientSearch } from '@/features/pacientes/PatientSearch';
 import { usePacienteRecurrente } from '@/features/pacientes/usePacienteRecurrente';
+import { verificarIdentidad } from '@/features/pacientes/api';
 import { PdfActionBar } from '@/features/reportes-pdf/PdfActionBar';
 import { borrarBorrador, guardarBorrador, leerBorrador, ranura, type Borrador } from '@/features/borrador/borrador';
 import { SESION_TERMINADA } from '@/lib/api-client';
@@ -64,6 +67,15 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
   const [advertencia, setAdvertencia] = useState<string[] | null>(null);
   /** Folio que se mostraba antes del primer guardado, si el servidor terminó asignando otro. */
   const [folioReasignado, setFolioReasignado] = useState<string | null>(null);
+  /**
+   * Valores ya validados que esperan la confirmación del médico (ventana "Confirma
+   * los datos del paciente"). `avisos` es null mientras se consulta al servidor.
+   */
+  const [confirmacion, setConfirmacion] = useState<{
+    values: HistoriaClinicaValues;
+    avisos: Aviso[] | null;
+    error: string | null;
+  } | null>(null);
   const recurrente = usePacienteRecurrente(form, carga === 'listo' && !guardado);
   // Leer isDirty en el render suscribe el componente a ese estado (react-hook-form).
   const { isDirty } = form.formState;
@@ -186,7 +198,7 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
     siguienteFolio().then((f) => form.setValue('folio', f));
   }
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  async function guardar(values: HistoriaClinicaValues) {
     if (!user) return;
     const esPrimerGuardado = !guardado;
     setSaving(true);
@@ -225,7 +237,36 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  /**
+   * Un expediente nuevo, o un cambio en los datos fijos del paciente, pasa antes por
+   * la ventana de confirmación (dice si la CURP/NSS ya son de otra persona). Los
+   * guardados de datos clínicos, que son la mayoría, se envían directo.
+   */
+  const onSubmit = form.handleSubmit((values) => {
+    if (!user) return;
+    if (guardado && !cambioDeIdentidad(values, form.formState.defaultValues)) return guardar(values);
+    setConfirmacion({ values, avisos: null, error: null });
+    // Solo se actualiza si la ventana sigue abierta con estos mismos valores.
+    const actualizar = (cambio: { avisos: Aviso[]; error: string | null }) =>
+      setConfirmacion((c) => (c && c.values === values ? { ...c, ...cambio } : c));
+    verificarIdentidad({ curp: values.curp, nss: values.nss }, guardado ? claveActual : null)
+      .then((identidad) => actualizar({ avisos: evaluarIdentidad(identidad, values, !guardado), error: null }))
+      .catch(() =>
+        // Sin la verificación se permite enviar (el servidor valida igual), pero se advierte.
+        actualizar({
+          avisos: [],
+          error: 'No se pudo verificar si la CURP o el NSS ya están registrados. Revisa los datos con cuidado.',
+        }),
+      );
   }, irAlPrimerError);
+
+  async function enviarConfirmado() {
+    if (!confirmacion) return;
+    await guardar(confirmacion.values);
+    setConfirmacion(null);
+  }
 
   /** Si un campo no pasa la validación, abre su pestaña y su sección y lo enfoca. */
   function irAlPrimerError(errors: FieldErrors<HistoriaClinicaValues>) {
@@ -375,6 +416,26 @@ export function HistoriaClinicaWorkspace({ folio }: { folio?: string }) {
           />
           <ClinicalSummaryPanel />
         </div>
+        {confirmacion && (
+          <ConfirmarDatosModal
+            datos={{
+              nombreCompleto: confirmacion.values.nombreCompleto ?? '',
+              curp: confirmacion.values.curp ?? '',
+              nss: confirmacion.values.nss ?? '',
+              fechaNacimiento: confirmacion.values.fechaNacimiento ?? '',
+              edad: confirmacion.values.edad ?? '',
+              genero: confirmacion.values.genero ?? '',
+              empresa: confirmacion.values.empresa ?? '',
+              medicoDictaminador: confirmacion.values.medicoDictaminador ?? '',
+            }}
+            avisos={confirmacion.avisos}
+            errorVerificacion={confirmacion.error}
+            esNuevo={!guardado}
+            enviando={saving}
+            onCancelar={() => setConfirmacion(null)}
+            onEnviar={enviarConfirmado}
+          />
+        )}
       </form>
     </FormProvider>
   );
