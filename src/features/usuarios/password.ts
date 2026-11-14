@@ -39,9 +39,13 @@ export function generarPasswordTemporal(longitud = LONGITUD_TEMPORAL): string {
   return chars.join('');
 }
 
-/** Regla para contraseñas nuevas: mínimo 8 caracteres con al menos una letra y un número. */
+/** Tope igual al del backend (PasswordSegura / LoginRequest): más largo da 400 en el servidor. */
+export const MAX_PASSWORD = 255;
+
+/** Regla para contraseñas nuevas: de 8 a 255 caracteres, con al menos una letra y un número. */
 export function problemaPassword(password: string): string | null {
   if (password.length < MIN_PASSWORD) return `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.`;
+  if (password.length > MAX_PASSWORD) return `La contraseña no puede tener más de ${MAX_PASSWORD} caracteres.`;
   if (!/[A-Za-zÑñ]/.test(password) || !/\d/.test(password)) return 'La contraseña debe incluir letras y números.';
   return null;
 }

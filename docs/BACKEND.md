@@ -66,7 +66,7 @@ listos para mostrarse.
 | 403 | `PASSWORD_CHANGE_REQUIRED` | La cuenta tiene contraseña temporal y llamó un endpoint distinto de `/auth/*` o `/me*` |
 | 404 | `NOT_FOUND` | Recurso o clave de expediente inexistente |
 | 409 | `CONFLICT` | Correo duplicado, último admin activo, o choque de guardado simultáneo ("Otro equipo guardó al mismo tiempo…") |
-| 429 | `TOO_MANY_REQUESTS` | Login: más de 5 intentos/min por IP **y** por cuenta |
+| 429 | `TOO_MANY_REQUESTS` | Login: más de 5 intentos/min por cuenta (desde cualquier IP) o más de 20/min por IP (cualquier cuenta). Cambio de contraseña: más de 5 intentos/min por usuario |
 | 500 | `INTERNAL_ERROR` | Nunca expone detalles internos |
 
 ### Middlewares (orden de aplicación)
@@ -151,6 +151,7 @@ mismo, y siempre queda ≥ 1 admin activo (409). Correo duplicado → 409 con `f
 |---|---|---|---|
 | `GET /pacientes/buscar` | todos | `q` (≥ 2 caracteres) | `{ items: [{ id, nombre_completo, curp, nss }] }` máx. 8; CURP/NSS por prefijo, nombre sin acentos |
 | `GET /pacientes/lookup` | todos | `curp` y/o `nss`, `excluir_clave?` | `{ paciente_id, ultimo_folio, ultimo_anio, datos }` o 404 |
+| `GET /pacientes/identidad` | todos | `curp?`, `nss?`, `clave?` (`{anio}-{folio}` del expediente que se edita) | `{ por_curp, por_nss, expedientes_del_paciente }`; cada `por_*` es `{ id, nombre_completo, curp, nss, expedientes, es_este }` o `null`. Solo identidad (sin datos clínicos), para la ventana de confirmación |
 
 `lookup` precarga un paciente recurrente desde su visita más reciente: datos fijos (nombre, nacimiento, género,
 CURP, NSS, domicilio, teléfono, empresa, puesto), **Antecedentes, Historia laboral, Exploración física y
@@ -166,9 +167,9 @@ Diagnóstico**. A propósito **no** incluye Laboratorio, Audiometría ni Gabinet
 | `GET /expedientes/estadisticas` | todos | `anio?` | `{ anio, total, ultimos_7_dias, hoy, editados_hoy, por_tipo }` |
 | `GET /expedientes/empresas` | todos | — | `{ items: string[] }` (filtro del Reporte SABI) |
 | `GET /expedientes/zonas` | todos | — | `{ items: string[] }` (zonas de fábrica + las ya capturadas) |
-| `POST /expedientes` | todos | payload plano (ver §5) | 201 expediente; bitácora "Creación de Folio" |
+| `POST /expedientes` | todos | payload plano (ver §5) | 201 expediente; bitácora "Creación de Folio" (si corrige datos fijos de un paciente existente, el detalle agrega «antes» → «después»). 400 si la CURP y el NSS son de pacientes distintos o ya están guardados con otra clave |
 | `GET /expedientes/{clave}` | todos | — | expediente; bitácora "Consulta" |
-| `PUT /expedientes/{clave}` | todos | payload plano | expediente; bitácora "Edición de Expediente" con los campos que cambiaron |
+| `PUT /expedientes/{clave}` | todos | payload plano | expediente; bitácora "Edición de Expediente" con los campos que cambiaron. CURP/NSS se normalizan como en el alta; 400 si ya pertenecen a otro paciente |
 | `GET /expedientes/{clave}/pdf` | admin | `plantilla=PECO\|TX` | expediente + `plantilla`; bitácora "Consulta" (hoy el front no lo usa: genera el PDF con el expediente ya abierto) |
 | `POST /expedientes/{clave}/entrega` | admin | — | `{ fecha_entrega_resultados }` (hoy, zona México). Se llama justo antes de generar el PDF |
 

@@ -17,6 +17,15 @@ de solo lectura. Un expediente se identifica con la clave `{anio}-{folio}` (ver 
 **Cierre de año.** Cada año el historial anterior se respalda en Excel y **se borra** de la base
 (`/admin/anios/{anio}/cerrar`, irreversible). El admin ve un aviso mientras haya años pendientes.
 
+**Confirmación de datos del paciente (2026-11-14).** Al guardar un expediente nuevo, o al cambiar nombre, CURP,
+NSS, fecha de nacimiento o género de uno ya guardado, aparece una ventana con esos datos, la empresa y el médico
+dictaminador. Consulta `GET /pacientes/identidad` y avisa: en rojo si la CURP o el NSS son de otra persona (no deja
+enviar; el servidor lo rechazaría), en ámbar si el paciente ya existe con otro nombre (el cambio se aplica a todos sus
+expedientes). El médico marca "Revisé los datos y son correctos" para habilitar Enviar. Guardar solo datos clínicos no
+la muestra. Por qué: en nov-2026 altas con la CURP de otra persona juntaron pacientes distintos en un solo registro.
+Lógica en `lib/confirmacion.ts`; ventana en `components/ConfirmarDatosModal.tsx`. NSS con todos los dígitos iguales
+se rechaza (Zod y backend): si no se tiene, se deja vacío.
+
 **Pacientes recurrentes.** Al capturar un CURP (18) o NSS (11) que ya existe, se precargan nombre,
 nacimiento, género, domicilio, teléfono, empresa, puesto, antecedentes, historia laboral, exploración física y
 diagnóstico desde su visita más reciente (con opción de deshacer). Laboratorio, audiometría y gabinete siempre se

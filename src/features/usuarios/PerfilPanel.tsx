@@ -9,7 +9,7 @@ import { btnPrimary, card, inputBase } from '@/components/ui/styles';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { ROLE_LABEL } from '@/features/auth/types';
 import { actualizarPerfil, cambiarPassword, obtenerPerfil, type DatosPerfil } from './api';
-import { MIN_PASSWORD } from './password';
+import { MAX_PASSWORD, MIN_PASSWORD } from './password';
 
 /** Perfil del usuario en sesión: datos personales y cambio de contraseña. */
 export function PerfilPanel() {
@@ -171,13 +171,13 @@ function CambiarPassword({ onSaved }: { onSaved: () => void }) {
         {/* Usuario oculto para que el gestor de contraseñas asocie el cambio a la cuenta correcta */}
         <input type="email" autoComplete="username" value={user?.email ?? ''} readOnly hidden />
         <Campo label="Contraseña actual">
-          <input type={tipo} value={f.actual} onChange={set('actual')} autoComplete="current-password" className={inputBase} />
+          <input type={tipo} value={f.actual} onChange={set('actual')} maxLength={MAX_PASSWORD} autoComplete="current-password" className={inputBase} />
         </Campo>
         <Campo label="Nueva contraseña">
-          <input type={tipo} value={f.nueva} onChange={set('nueva')} autoComplete="new-password" className={inputBase} />
+          <input type={tipo} value={f.nueva} onChange={set('nueva')} maxLength={MAX_PASSWORD} autoComplete="new-password" className={inputBase} />
         </Campo>
         <Campo label="Confirmar nueva contraseña">
-          <input type={tipo} value={f.confirmar} onChange={set('confirmar')} autoComplete="new-password" className={inputBase} />
+          <input type={tipo} value={f.confirmar} onChange={set('confirmar')} maxLength={MAX_PASSWORD} autoComplete="new-password" className={inputBase} />
         </Campo>
 
         <ul className="space-y-1.5" aria-label="Requisitos de la contraseña">

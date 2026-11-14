@@ -101,6 +101,7 @@ export function LoginCard() {
             icon={Mail}
             type="email"
             autoComplete="username"
+            maxLength={255}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="nombre@crm-colima.mx"
@@ -110,6 +111,7 @@ export function LoginCard() {
             icon={Lock}
             type={showPass ? 'text' : 'password'}
             autoComplete="current-password"
+            maxLength={255}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
