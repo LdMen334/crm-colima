@@ -36,7 +36,7 @@ const ROLES = ['ServiciosMedicos', 'Leo'] as const;
  */
 export const baseUsuario = z.object({
   nombre: nombreObligatorio,
-  email: z.string().trim().email('El correo no es válido.'),
+  email: z.string().trim().max(255, 'El correo no puede tener más de 255 caracteres.').email('El correo no es válido.'),
   role: z.enum(ROLES),
   cedula: z.string().trim(),
   universidad: z.string().trim(),
