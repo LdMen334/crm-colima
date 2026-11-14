@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DatabaseBackup, Eye, FilePlus2, Loader2, PencilLine, ScrollText, Search } from 'lucide-react';
+import { Archive, DatabaseBackup, Eye, FilePlus2, Loader2, PencilLine, ScrollText, Search } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
@@ -18,7 +18,8 @@ const ACCION_STYLE: Record<AccionAuditoria, { tone: BadgeTone; icon: typeof Eye 
   'Edición de Expediente': { tone: 'amber', icon: PencilLine },
   Consulta: { tone: 'blue', icon: Eye },
   'Importación Histórica': { tone: 'blue', icon: ScrollText },
-  'Cierre de Año': { tone: 'red', icon: DatabaseBackup },
+  'Respaldo de Año': { tone: 'neutral', icon: DatabaseBackup },
+  'Cierre de Año': { tone: 'red', icon: Archive },
 };
 
 export function BitacoraPanel() {
@@ -140,8 +141,8 @@ export function BitacoraPanel() {
                           </Badge>
                         </td>
                         <td className="max-w-64 px-4 py-3">
-                          {e.accion === 'Cierre de Año' ? (
-                            // El cierre es de un año completo, no de un folio: no hay expediente que abrir.
+                          {e.accion === 'Cierre de Año' || e.accion === 'Respaldo de Año' ? (
+                            // Son de un año completo, no de un folio: no hay expediente que abrir.
                             <span className="font-mono text-xs font-semibold text-ink">Año {e.anio}</span>
                           ) : (
                             <>

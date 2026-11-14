@@ -218,12 +218,12 @@ export async function obtenerJornada(fecha: string): Promise<Expediente[]> {
 }
 
 /**
- * Paso 1 del cierre de año: descarga el historial completo de un año para
- * armar el Excel de respaldo. No borra nada (el cliente cierra el historial
- * cada año por costo de almacenamiento). Solo para administradores.
+ * Descarga el historial completo de un año para armar el Excel de respaldo. No
+ * borra nada; después hay que confirmar el respaldo con confirmarRespaldoAnio()
+ * (features/anios/api.ts). Solo para administradores.
  *
  * @param anio año a respaldar
- * @return los expedientes, su total y la huella que pide el paso 2
+ * @return los expedientes, su total y la huella que pide la confirmación
  */
 export async function descargarRespaldoAnio(
   anio: number,
@@ -234,27 +234,6 @@ export async function descargarRespaldoAnio(
   return { total: data.total, huella: data.huella, items: data.items.map(aExpediente) };
 }
 
-/**
- * Paso 2 del cierre: borra para siempre el año ya respaldado. Se llama solo
- * después de generar el Excel; el total y la huella de la descarga prueban que
- * el respaldo llegó completo (si el año cambió desde entonces, el servidor
- * responde 409 y no borra nada).
- *
- * @param anio año a cerrar
- * @param total expedientes recibidos en el respaldo
- * @param huella huella recibida al final del respaldo
- */
-export async function cerrarAnio(
-  anio: number,
-  total: number,
-  huella: string,
-): Promise<{ totalBorrado: number; pacientesBorrados: number }> {
-  const data = await apiFetch<{ anio: number; total_borrado: number; pacientes_borrados: number }>(
-    `/admin/anios/${anio}/cerrar`,
-    { method: 'POST', body: { total, huella } },
-  );
-  return { totalBorrado: data.total_borrado, pacientesBorrados: data.pacientes_borrados };
-}
 
 /**
  * Estampa la fecha de entrega de resultados (hoy, zona México) justo antes

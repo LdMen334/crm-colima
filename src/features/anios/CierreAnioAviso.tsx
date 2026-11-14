@@ -1,126 +1,41 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle, DatabaseBackup, Loader2 } from 'lucide-react';
-import { Modal } from '@/components/ui/Modal';
-import { btnPrimary, btnSecondary } from '@/components/ui/styles';
-import { cerrarAnio, descargarRespaldoAnio } from '@/features/historia-clinica/api';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { obtenerAniosPendientes } from './api';
 
-type Paso = 'oculto' | 'aviso' | 'confirmar' | 'cerrando' | 'listo';
-
 /**
- * Avisa al admin cuando queda historial de un año anterior sin respaldar: el
- * cliente borra el historial completo de un año en cuanto lo descarga (no se
- * archiva, por costo de almacenamiento). Se monta una sola vez en el layout
- * de /admin.
+ * Franja en el panel de Administración mientras haya historial de años anteriores
+ * sin cerrar. Antes era un modal que interrumpía; ahora solo lleva a la pantalla
+ * de cierre de año (decisión del dueño 2026-11-14). No se muestra en esa pantalla,
+ * que ya tiene su propio aviso.
  */
 export function CierreAnioAviso() {
-  const [pendientes, setPendientes] = useState<number[] | null>(null);
-  const [paso, setPaso] = useState<Paso>('oculto');
-  const [error, setError] = useState<string | null>(null);
-  const [totalBorrado, setTotalBorrado] = useState<number | null>(null);
+  const pathname = usePathname();
+  const [anios, setAnios] = useState<number[]>([]);
 
   useEffect(() => {
     obtenerAniosPendientes()
-      .then((anios) => {
-        setPendientes(anios);
-        if (anios.length > 0) setPaso('aviso');
-      })
+      .then((lista) => setAnios(lista.map((a) => a.anio)))
       .catch(() => {});
   }, []);
 
-  const anio = pendientes?.[0];
-
-  async function confirmarCierre() {
-    if (!anio) return;
-    setPaso('cerrando');
-    setError(null);
-    let excelDescargado = false;
-    try {
-      // Primero el respaldo y el Excel; el borrado solo se pide si ambos salieron
-      // bien (auditoría run-1: antes se borraba aunque el Excel no se generara).
-      const respaldo = await descargarRespaldoAnio(anio);
-      const { descargarExcel } = await import('@/features/reportes-excel/export');
-      await descargarExcel(respaldo.items, `historias-clinicas_${anio}.xlsx`, `Historias clínicas · Respaldo ${anio}`);
-      excelDescargado = true;
-      const { totalBorrado: total } = await cerrarAnio(anio, respaldo.total, respaldo.huella);
-      setTotalBorrado(total);
-      setPendientes((lista) => (lista ?? []).slice(1));
-      setPaso('listo');
-    } catch (err) {
-      const motivo = err instanceof Error ? err.message : 'No fue posible cerrar el año. Intenta de nuevo.';
-      setError(excelDescargado ? `Se descargó el Excel, pero el historial no se borró: ${motivo}` : motivo);
-      setPaso('confirmar');
-    }
-  }
-
-  if (paso === 'oculto' || !anio) return null;
-
-  if (paso === 'listo') {
-    return (
-      <Modal
-        title="Respaldo completado"
-        onClose={() => setPaso((pendientes?.length ?? 0) > 0 ? 'aviso' : 'oculto')}
-        footer={
-          <button
-            type="button"
-            onClick={() => setPaso((pendientes?.length ?? 0) > 0 ? 'aviso' : 'oculto')}
-            className={btnPrimary}
-          >
-            Entendido
-          </button>
-        }
-      >
-        <p className="text-sm text-ink-muted">
-          Se descargó el Excel de {anio} y se eliminaron {totalBorrado} expedientes de la base de datos.
-        </p>
-      </Modal>
-    );
-  }
-
-  if (paso === 'confirmar' || paso === 'cerrando') {
-    return (
-      <Modal
-        title={`¿Eliminar el historial de ${anio}?`}
-        onClose={() => paso === 'confirmar' && setPaso('aviso')}
-        footer={
-          <>
-            <button type="button" onClick={() => setPaso('aviso')} disabled={paso === 'cerrando'} className={btnSecondary}>
-              Cancelar
-            </button>
-            <button type="button" onClick={confirmarCierre} disabled={paso === 'cerrando'} className={btnPrimary}>
-              {paso === 'cerrando' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Confirmar y descargar
-            </button>
-          </>
-        }
-      >
-        <div className="flex gap-3 rounded-xl border border-crm-red/15 bg-crm-red-soft px-3 py-2.5 text-sm text-crm-red-dark">
-          <AlertTriangle className="h-5 w-5 shrink-0" />
-          <p>
-            Al confirmar, los registros de pacientes de <strong>{anio}</strong> se eliminarán de la base de datos y ya
-            no habrá manera de recuperarlos.
-          </p>
-        </div>
-        {error && <p role="alert" className="mt-3 text-sm text-crm-red-dark">{error}</p>}
-      </Modal>
-    );
-  }
+  if (anios.length === 0 || pathname.startsWith('/admin/cierre-anio')) return null;
 
   return (
-    <Modal
-      title={`Historial de ${anio} pendiente de respaldo`}
-      onClose={() => setPaso('oculto')}
-      footer={
-        <button type="button" onClick={() => setPaso('confirmar')} className={btnPrimary}>
-          <DatabaseBackup className="h-4 w-4" /> Respaldar y cerrar {anio}
-        </button>
-      }
+    <Link
+      href="/admin/cierre-anio"
+      className="mb-6 flex items-center gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200 transition-colors hover:bg-amber-100"
     >
-      <p className="text-sm text-ink-muted">
-        Antes de iniciar el nuevo ciclo hay que descargar el Excel completo de {anio}.
-      </p>
-    </Modal>
+      <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+      <span className="flex-1">
+        <strong>Historial pendiente de respaldar:</strong> {anios.join(', ')}.
+      </span>
+      <span className="inline-flex items-center gap-1 font-semibold">
+        Ir a Cierre de año <ArrowRight className="h-4 w-4" aria-hidden />
+      </span>
+    </Link>
   );
 }

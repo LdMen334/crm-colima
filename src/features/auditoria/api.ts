@@ -5,10 +5,11 @@ export type AccionAuditoria =
   | 'Edición de Expediente'
   | 'Consulta'
   | 'Importación Histórica'
+  | 'Respaldo de Año'
   | 'Cierre de Año';
 
 export const ACCIONES: readonly AccionAuditoria[] = [
-  'Creación de Folio', 'Edición de Expediente', 'Consulta', 'Importación Histórica', 'Cierre de Año',
+  'Creación de Folio', 'Edición de Expediente', 'Consulta', 'Importación Histórica', 'Respaldo de Año', 'Cierre de Año',
 ];
 
 export interface EventoAuditoria {
